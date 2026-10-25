@@ -4,6 +4,7 @@
 // Jalankan: npm test   (port 3000-3002 harus kosong; hentikan "npm start" dahulu)
 const fs = require('fs');
 const net = require('net');
+const nodeHttp = require('http');
 const path = require('path');
 const { spawn, spawnSync } = require('child_process');
 const jwt = require('jsonwebtoken');
@@ -83,6 +84,28 @@ const login = async (u, device = DEV[u]) => {
 };
 const as = (s) => ({ token: s.access, device: s.dev });
 const msg = (r) => `HTTP ${r.status}${r.json && (r.json.message || r.json.error) ? ` - ${r.json.message || r.json.error}` : ''}`;
+
+// Request HTTP mentah: fetch() melarang header `Expect`, jadi pakai node:http.
+function rawHttp(url, { method = 'GET', headers = {}, body = '' } = {}) {
+  return new Promise((resolve, reject) => {
+    const u = new URL(url);
+    const req = nodeHttp.request(
+      { hostname: u.hostname, port: u.port, path: u.pathname + u.search, method, headers },
+      (res) => {
+        const chunks = [];
+        res.on('data', (c) => chunks.push(c));
+        res.on('end', () => {
+          let json = null;
+          try { json = JSON.parse(Buffer.concat(chunks).toString('utf8')); } catch { /* bukan JSON */ }
+          resolve({ status: res.statusCode, json });
+        });
+      }
+    );
+    req.on('error', reject);
+    req.setTimeout(15000, () => req.destroy(new Error('timeout request mentah')));
+    req.end(body);
+  });
+}
 
 // ---------- pencatatan hasil ----------
 const results = [];
@@ -368,6 +391,22 @@ async function main() {
   await t('20d', 'JSON rusak pada /auth/login ditangani dengan 400 (bukan crash)', 'POST /auth/login body "{rusak"', '400', async () => {
     const res = await fetch(`${GW}/auth/login`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Device-ID': DEV.mhs1 }, body: '{rusak' });
     return [res.status === 400, `HTTP ${res.status}`];
+  });
+  await t('20e', 'Request dengan header Expect: 100-continue tetap membawa X-Gateway-Secret (klien PowerShell/.NET)', 'PUT /nilai/<id kelas 1> via gateway dengan Expect: 100-continue', '200; gateway memasang X-Gateway-Secret sebelum proxy (bukan hanya di hook proxyReq)', async () => {
+    const id = gradeId(1, 'mhs2');
+    const body = JSON.stringify({ nilai: 77 });
+    const r = await rawHttp(`${GW}/nilai/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(body),
+        Expect: '100-continue',
+        Authorization: `Bearer ${dosen1.access}`,
+        'X-Device-ID': DEV.dosen1,
+      },
+      body,
+    });
+    return [r.status === 200, msg(r)];
   });
 
   // ===== FASE B: jam akses ditutup (simulasi di luar jam) =====

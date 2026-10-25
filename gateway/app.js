@@ -43,6 +43,16 @@ app.use((req, res, next) => {
 });
 
 // 3. Teruskan ke service dengan X-Gateway-Secret. Body tidak diparse di gateway (stream diteruskan apa adanya).
+// Header identitas gateway dipasang ke req.headers SEBELUM proxy, bukan hanya di hook `proxyReq`:
+// http-proxy sengaja tidak memicu event `proxyReq` bila request membawa header `Expect`
+// (lihat http-proxy/lib/http-proxy/passes/web-incoming.js), sehingga klien seperti PowerShell/.NET
+// yang mengirim `Expect: 100-continue` akan kehilangan X-Gateway-Secret dan ditolak service.
+app.use((req, _res, next) => {
+  req.headers['x-gateway-secret'] = cfg.gatewaySecret; // selalu menimpa nilai dari client
+  req.headers['x-request-id'] = req.id;
+  next();
+});
+
 function proxyTo(target, pathRe) {
   return createProxyMiddleware({
     target,
@@ -51,7 +61,8 @@ function proxyTo(target, pathRe) {
     timeout: 10000,
     on: {
       proxyReq(proxyReq, req) {
-        proxyReq.setHeader('X-Gateway-Secret', cfg.gatewaySecret); // menimpa header sama dari client
+        // Cadangan untuk request tanpa header `Expect` (jalur normal).
+        proxyReq.setHeader('X-Gateway-Secret', cfg.gatewaySecret);
         proxyReq.setHeader('X-Request-ID', req.id);
       },
       error(err, req, res) {

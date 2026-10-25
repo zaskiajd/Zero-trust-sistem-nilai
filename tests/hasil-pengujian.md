@@ -1,9 +1,9 @@
 # Hasil Pengujian Otomatis
 
-Dihasilkan oleh `npm test` (tests/run-tests.js) pada 2026-10-25T08:05:51.163Z dengan Node v22.22.2.
+Dihasilkan oleh `npm test` (tests/run-tests.js) pada 2026-10-25T08:55:55.559Z dengan Node v24.13.0.
 Semua "Hasil aktual" berasal dari respons HTTP dan isi database nyata saat pengujian berjalan (bukan ditulis manual).
 
-**Ringkasan: 53/53 lulus.**
+**Ringkasan: 54/54 lulus.**
 
 | No | Tujuan | Request | Hasil diharapkan | Hasil aktual | Status |
 |---|---|---|---|---|---|
@@ -53,23 +53,24 @@ Semua "Hasil aktual" berasal dari respons HTTP dan isi database nyata saat pengu
 | 20b | Client tidak dapat memalsukan X-Gateway-Secret lewat gateway (gateway menimpa header) | GET /nilai via gateway dengan X-Gateway-Secret palsu + token mhs1 | 200 (secret palsu tidak berpengaruh) | HTTP 200 | LULUS |
 | 20c | Endpoint/metode tak dikenal ditolak (default deny) | GET /admin, DELETE /nilai/1, GET /nilai%2F..%2Ftranskrip%2F2210002 | 403 untuk semuanya | /admin 403, DELETE 403, encoded traversal 403 | LULUS |
 | 20d | JSON rusak pada /auth/login ditangani dengan 400 (bukan crash) | POST /auth/login body "{rusak" | 400 | HTTP 400 | LULUS |
-| 12a | Perubahan nilai di luar jam akses ditolak | PUT /nilai/<id kelas 1> (dosen1; jam akses dikonfigurasi 17:00-18:00, sekarang di luar rentang) | 403 "Di luar jam akses"; nilai tidak berubah | HTTP 403 - Di luar jam akses perubahan/finalisasi (17:00-18:00 Asia/Jakarta); nilai 78 -> 78 | LULUS |
+| 20e | Request dengan header Expect: 100-continue tetap membawa X-Gateway-Secret (klien PowerShell/.NET) | PUT /nilai/<id kelas 1> via gateway dengan Expect: 100-continue | 200; gateway memasang X-Gateway-Secret sebelum proxy (bukan hanya di hook proxyReq) | HTTP 200 - Nilai diperbarui | LULUS |
+| 12a | Perubahan nilai di luar jam akses ditolak | PUT /nilai/<id kelas 1> (dosen1; jam akses dikonfigurasi 17:00-18:00, sekarang di luar rentang) | 403 "Di luar jam akses"; nilai tidak berubah | HTTP 403 - Di luar jam akses perubahan/finalisasi (17:00-18:00 Asia/Jakarta); nilai 77 -> 77 | LULUS |
 | 12b | Finalisasi di luar jam akses ditolak | POST /kelas/1/finalisasi (dosen1, di luar jam) | 403; kelas tetap belum final | HTTP 403 - Di luar jam akses perubahan/finalisasi (17:00-18:00 Asia/Jakarta); nilai final kelas 1=0 | LULUS |
 | 12c | Service Nilai memeriksa ulang jam akses sendiri (gateway dilewati, secret & token valid) | PUT langsung ke Service Nilai dengan X-Gateway-Secret + token dosen1 | 403 "Di luar jam akses" dari service | HTTP 403 - Di luar jam akses (17:00-18:00 Asia/Jakarta) | LULUS |
 | 12d | Jam akses hanya membatasi perubahan/finalisasi; membaca tetap boleh | GET /nilai (dosen1, di luar jam) | 200 | HTTP 200 | LULUS |
 | S1 | Sinkron gagal ditangani jelas: 502, status final tercatat, sync_status=gagal (tidak diam-diam) | POST /kelas/1/finalisasi (dosen1) saat Service Transkrip mati | 502 dengan sinkron.status=gagal; classes.sync_status=gagal; nilai tetap final; transkrip kosong | HTTP 502 - Nilai sudah final, tetapi sinkronisasi ke transkrip GAGAL; sync_status=gagal; final=3; transkrip=0 | LULUS |
 | S2 | Mengulang finalisasi (idempoten) menyelesaikan sinkron yang gagal | POST /kelas/1/finalisasi (dosen1) setelah Service Transkrip hidup lagi | 200; sync_status=tersinkron; transkrip mhs1 memuat IF301 dan IF302 | HTTP 200 - Kelas difinalisasi dan transkrip tersinkron; sync_status=tersinkron; transkrip mhs1: IF301,IF302 | LULUS |
-| 22 | Audit log mencatat waktu, subjek, endpoint, device, hasil (allow & deny), dan alasan | SELECT dari tabel audit_logs setelah seluruh skenario | Ada baris allow & deny; kolom wajib terisi; tidak ada token/secret/password di log | 78 baris (allow=39, deny=39); kolom wajib kosong=0; baris user tanpa device (di luar kasus header device memang kosong)=0; bocor secret/token=false; tipe subjek=user/anonymous/service | LULUS |
+| 22 | Audit log mencatat waktu, subjek, endpoint, device, hasil (allow & deny), dan alasan | SELECT dari tabel audit_logs setelah seluruh skenario | Ada baris allow & deny; kolom wajib terisi; tidak ada token/secret/password di log | 79 baris (allow=40, deny=39); kolom wajib kosong=0; baris user tanpa device (di luar kasus header device memang kosong)=0; bocor secret/token=false; tipe subjek=user/anonymous/service | LULUS |
 
 ## Contoh audit log (8 penolakan terakhir)
 
 | Waktu | Subjek | Request | Device | Hasil | HTTP | Alasan |
 |---|---|---|---|---|---|---|
-| 2026-10-25T08:05:49.328Z | user:dosen1 | POST /kelas/1/finalisasi | DEV-DOSEN-01 | deny | 403 | Di luar jam akses perubahan/finalisasi (17:00-18:00 Asia/Jakarta) |
-| 2026-10-25T08:05:49.325Z | user:dosen1 | PUT /nilai/2 | DEV-DOSEN-01 | deny | 403 | Di luar jam akses perubahan/finalisasi (17:00-18:00 Asia/Jakarta) |
-| 2026-10-25T08:05:48.257Z | anonymous | POST /auth/login | DEV-MHS-01 | deny | 400 | Request tidak valid (body/JSON rusak atau terlalu besar) |
-| 2026-10-25T08:05:48.255Z | user:mhs1 | GET /nilai%2F..%2Ftranskrip%2F2210002 | DEV-MHS-01 | deny | 403 | Tidak ada kebijakan untuk endpoint/metode ini (default deny) |
-| 2026-10-25T08:05:48.253Z | user:dosen1 | DELETE /nilai/1 | DEV-DOSEN-01 | deny | 403 | Tidak ada kebijakan untuk endpoint/metode ini (default deny) |
-| 2026-10-25T08:05:48.251Z | user:admin | GET /admin | DEV-ADMIN-01 | deny | 403 | Tidak ada kebijakan untuk endpoint/metode ini (default deny) |
-| 2026-10-25T08:05:48.217Z | service:service-nilai | GET /transkrip/2210001 | - | deny | 403 | Role service tidak berhak melihat transkrip |
-| 2026-10-25T08:05:48.215Z | service:service-nilai | GET /nilai | - | deny | 403 | Role service tidak berhak melihat /nilai |
+| 2026-10-25T08:55:53.346Z | user:dosen1 | POST /kelas/1/finalisasi | DEV-DOSEN-01 | deny | 403 | Di luar jam akses perubahan/finalisasi (17:00-18:00 Asia/Jakarta) |
+| 2026-10-25T08:55:53.343Z | user:dosen1 | PUT /nilai/2 | DEV-DOSEN-01 | deny | 403 | Di luar jam akses perubahan/finalisasi (17:00-18:00 Asia/Jakarta) |
+| 2026-10-25T08:55:51.937Z | anonymous | POST /auth/login | DEV-MHS-01 | deny | 400 | Request tidak valid (body/JSON rusak atau terlalu besar) |
+| 2026-10-25T08:55:51.933Z | user:mhs1 | GET /nilai%2F..%2Ftranskrip%2F2210002 | DEV-MHS-01 | deny | 403 | Tidak ada kebijakan untuk endpoint/metode ini (default deny) |
+| 2026-10-25T08:55:51.931Z | user:dosen1 | DELETE /nilai/1 | DEV-DOSEN-01 | deny | 403 | Tidak ada kebijakan untuk endpoint/metode ini (default deny) |
+| 2026-10-25T08:55:51.929Z | user:admin | GET /admin | DEV-ADMIN-01 | deny | 403 | Tidak ada kebijakan untuk endpoint/metode ini (default deny) |
+| 2026-10-25T08:55:51.907Z | service:service-nilai | GET /transkrip/2210001 | - | deny | 403 | Role service tidak berhak melihat transkrip |
+| 2026-10-25T08:55:51.906Z | service:service-nilai | GET /nilai | - | deny | 403 | Role service tidak berhak melihat /nilai |

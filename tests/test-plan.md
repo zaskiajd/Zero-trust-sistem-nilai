@@ -2,7 +2,7 @@
 
 Dua cara menjalankan:
 
-1. **Otomatis**: `npm test` -> hasil aktual di `tests/hasil-pengujian.md` (53 skenario, termasuk 22 skenario minimum rancangan).
+1. **Otomatis**: `npm test` -> hasil aktual di `tests/hasil-pengujian.md` (54 skenario, termasuk 22 skenario minimum rancangan).
 2. **Manual / demo**: `npm run db:init`, `npm start`, lalu `bash tests/demo-curl.sh` atau salin perintah dari README ke Postman.
 
 Pemetaan skenario ke ID uji: lihat `tests/hasil-pengujian.md` (hasil aktual per ID uji).
