@@ -179,6 +179,50 @@ Skenario lengkap siap-jalan (untuk demo video): `bash tests/demo-curl.sh` (setel
 
 Hasil terakhir saat repositori ini disiapkan: **54/54 lulus** (lihat file hasil untuk detail per skenario).
 
+### Postman (42 request, 55 assertion)
+
+Koleksi siap-import: [`tests/postman/zero-trust-sistem-nilai.postman_collection.json`](tests/postman/zero-trust-sistem-nilai.postman_collection.json). Tidak perlu PowerShell atau curl.
+
+1. Siapkan dan jalankan aplikasi (terminal 1):
+
+   ```powershell
+   npm run setup
+   npm run db:init
+   npm start
+   ```
+
+2. Buat environment Postman dari `.env` (terminal 2). Perintah ini mengisi URL, `GATEWAY_SECRET`, dan `SERVICE_CLIENT_SECRET` otomatis, sehingga tidak ada secret yang perlu diketik atau ikut ter-commit:
+
+   ```powershell
+   npm run postman:env
+   # -> tests/postman/local.postman_environment.json (di-ignore git)
+   ```
+
+3. Di Postman: **File > Import** dua file berikut.
+
+   - `tests/postman/zero-trust-sistem-nilai.postman_collection.json`
+   - `tests/postman/local.postman_environment.json`
+
+4. Pilih environment **Zero Trust Sistem Nilai - Lokal** (pojok kanan atas), lalu klik **Run collection** (atau `Ctrl+Shift+R`).
+
+5. Hasil yang diharapkan: **42 request, 55 assertion, 0 gagal** (sekitar 5 detik).
+
+| Folder | Cakupan |
+|---|---|
+| `01 - Autentikasi & Token` | login 5 akun (token disimpan otomatis), password salah, device tak terdaftar, tanpa token, token service, refresh, logout, refresh setelah logout |
+| `02 - Nilai (kebijakan akses)` | mahasiswa hanya NIM sendiri, dosen hanya kelas yang diampu, ubah nilai, validasi 0-100, admin ditolak |
+| `03 - Finalisasi & sinkronisasi transkrip` | finalisasi, nilai final tidak dapat diubah, dosen lain/mahasiswa ditolak, sinkron hanya dengan token service |
+| `04 - Transkrip` | mahasiswa NIM sendiri, NIM lain 403, admin boleh, dosen 403, token service 403 |
+| `05 - Akses langsung ke service (assume breach)` | service tanpa gateway secret 403, secret benar + token acak 401, secret salah 403, client tidak bisa memalsukan secret lewat gateway |
+| `06 - Default deny` | endpoint, metode, dan path tak dikenal ditolak 403 |
+
+Catatan:
+
+- **Jalankan seluruh koleksi**, bukan satu request: folder `01` menyimpan token ke variabel koleksi yang dipakai folder berikutnya.
+- Koleksi aman dijalankan berulang (finalisasi idempoten). Untuk mengembalikan data seed: hentikan `npm start`, `npm run db:init`, lalu `npm start` lagi.
+- Uji jam akses tidak bisa dari Postman saja: ubah `ACCESS_HOURS_START/END` di `.env`, restart, lalu ulangi request `PUT /nilai/:id` atau finalisasi (folder `02`/`03`).
+- Alternatif tanpa GUI (CI): `npx newman run tests/postman/zero-trust-sistem-nilai.postman_collection.json -e tests/postman/local.postman_environment.json`.
+
 ## Keputusan desain penting
 
 - **Dua lapis kontrol.** Gateway (PEP) memutuskan lewat `gateway/policy.js` dengan membaca DB (pengampu kelas, status final, NIM, jam akses). Service **tidak percaya** gateway: masing-masing memeriksa `X-Gateway-Secret` (waktu konstan), tanda tangan + masa berlaku + issuer JWT, lalu memeriksa ulang kepemilikan/status/jam dari DB. Gateway secret tanpa token valid -> 401; tanpa secret -> 403.

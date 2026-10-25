@@ -3,7 +3,7 @@
 Dua cara menjalankan:
 
 1. **Otomatis**: `npm test` -> hasil aktual di `tests/hasil-pengujian.md` (54 skenario, termasuk 22 skenario minimum rancangan).
-2. **Manual / demo**: `npm run db:init`, `npm start`, lalu `bash tests/demo-curl.sh` atau salin perintah dari README ke Postman.
+2. **Manual / demo**: `npm run db:init`, `npm start`, lalu `bash tests/demo-curl.sh`, atau import `tests/postman/zero-trust-sistem-nilai.postman_collection.json` ke Postman (`npm run postman:env` lebih dulu) lalu Run collection: 42 request, 55 assertion.
 
 Pemetaan skenario ke ID uji: lihat `tests/hasil-pengujian.md` (hasil aktual per ID uji).
 
