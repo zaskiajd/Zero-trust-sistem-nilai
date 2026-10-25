@@ -4,7 +4,7 @@
   "description": "Sistem Nilai dengan prinsip Zero Trust: API Gateway (PEP) + Service Nilai + Service Transkrip",
   "private": true,
   "license": "UNLICENSED",
-  "engines": { "node": ">=18" },
+  "engines": { "node": ">=20" },
   "scripts": {
     "setup": "node scripts/setup-env.js",
     "db:init": "node database/init.js",
@@ -16,7 +16,7 @@
     "test": "node tests/run-tests.js"
   },
   "dependencies": {
-    "better-sqlite3": "^11.7.0",
+    "better-sqlite3": "^12.11.1",
     "dotenv": "^16.4.5",
     "express": "^4.21.2",
     "http-proxy-middleware": "^3.0.3",
