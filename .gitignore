@@ -4,4 +4,5 @@ database/*.db
 database/*.db-shm
 database/*.db-wal
 tests/tmp/
+tests/postman/local.postman_environment.json
 *.log

@@ -13,7 +13,8 @@
     "start:nilai": "node service-nilai/app.js",
     "start:transkrip": "node service-transkrip/app.js",
     "audit": "node scripts/show-audit.js",
-    "test": "node tests/run-tests.js"
+    "test": "node tests/run-tests.js",
+    "postman:env": "node scripts/gen-postman-env.js"
   },
   "dependencies": {
     "better-sqlite3": "^12.11.1",
