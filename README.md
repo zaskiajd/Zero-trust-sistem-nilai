@@ -33,8 +33,8 @@ Service Nilai :3001            Service Transkrip :3002
 
 ## Prasyarat
 
-- Node.js 18 atau lebih baru (diuji pada Node 22).
-- npm. `better-sqlite3` memakai binary siap-pakai; jika gagal terpasang, butuh toolchain C++ (Windows: Visual Studio Build Tools).
+- Node.js **20 atau lebih baru** (diuji pada Node 24.13.0). `better-sqlite3@^12` menyediakan binary siap-pakai untuk Node 20/22/24/26, jadi tidak perlu compiler.
+- npm. Jika binary `better-sqlite3` tidak tersedia untuk platform/versi Node Anda, npm akan mengompilasi dari sumber dan membutuhkan toolchain C++ (Windows: Visual Studio Build Tools).
 
 ## Instalasi dan menjalankan
 
@@ -48,6 +48,53 @@ npm start          # menjalankan gateway :3000, service nilai :3001, service tra
 Alternatif: salin `.env.example` ke `.env` lalu isi secret sendiri. Menjalankan terpisah: `npm run start:gateway`, `npm run start:nilai`, `npm run start:transkrip`.
 
 Melihat audit log: `npm run audit -- 30` (30 baris terakhir).
+
+### Windows (PowerShell)
+
+Perintah `npm` sama persis. Yang berbeda hanya sintaks variabel dan kutip saat memanggil API: **jangan** memakai `curl -d '{"nilai":90}'` di PowerShell 5.1 (quoting-nya merusak JSON sehingga muncul `400 bad_request`). Gunakan `Invoke-RestMethod`.
+
+```powershell
+npm install
+npm run setup
+npm run db:init
+npm start
+```
+
+Uji cepat dari terminal lain setelah gateway hidup:
+
+```powershell
+$G = 'http://127.0.0.1:3000'
+
+$login = Invoke-RestMethod -Method Post -Uri "$G/auth/login" `
+  -Headers @{ 'X-Device-ID' = 'DEV-DOSEN-01' } `
+  -ContentType 'application/json' `
+  -Body (@{ username = 'dosen1'; password = 'Praktikum#2026' } | ConvertTo-Json)
+
+$h = @{ Authorization = "Bearer $($login.access_token)"; 'X-Device-ID' = 'DEV-DOSEN-01' }
+
+# Lihat nilai kelas yang diampu
+Invoke-RestMethod -Uri "$G/nilai" -Headers $h | ConvertTo-Json -Depth 5
+
+# Ubah nilai (id 1 = mhs1 di kelas dosen1)
+Invoke-RestMethod -Method Put -Uri "$G/nilai/1" -Headers $h `
+  -ContentType 'application/json' -Body (@{ nilai = 92 } | ConvertTo-Json)
+
+# Finalisasi kelas 1 (memicu sinkron transkrip lewat gateway)
+Invoke-RestMethod -Method Post -Uri "$G/kelas/1/finalisasi" -Headers $h
+```
+
+Respons 401/403 akan melempar error. Untuk melihat status dan pesannya:
+
+```powershell
+try {
+  Invoke-RestMethod -Uri "$G/transkrip/2210002" -Headers $h
+} catch {
+  [int]$_.Exception.Response.StatusCode    # 403
+  $_.ErrorDetails.Message                  # {"error":"forbidden",...}
+}
+```
+
+`tests/demo-curl.sh` membutuhkan bash: jalankan lewat **Git Bash** (`bash tests/demo-curl.sh`) atau pakai potongan PowerShell di atas.
 
 ### Konfigurasi `.env`
 
@@ -95,6 +142,8 @@ Semua endpoint selain `/auth/*` wajib `Authorization: Bearer <token>`; request u
 
 ## Contoh request (curl)
 
+> Sintaks di bawah untuk **bash/Linux/macOS/Git Bash**. Untuk PowerShell di Windows, lihat bagian [Windows (PowerShell)](#windows-powershell).
+
 ```bash
 G=http://127.0.0.1:3000
 # Login
@@ -128,7 +177,7 @@ Skenario lengkap siap-jalan (untuk demo video): `bash tests/demo-curl.sh` (setel
 
 `npm test` (hentikan `npm start` dahulu; port 3000-3002 harus kosong). Runner menjalankan gateway + dua service sungguhan dengan database sementara, menembak API lewat HTTP, dan menulis hasil aktual ke [`tests/hasil-pengujian.md`](tests/hasil-pengujian.md). Cakupan: seluruh 22 skenario matriks minimum rancangan, ditambah uji batas (token `alg=none`, role token dipalsukan, jam akses di service, kegagalan sinkron). Rencana uji: [`tests/test-plan.md`](tests/test-plan.md).
 
-Hasil terakhir saat repositori ini disiapkan: **53/53 lulus** (lihat file hasil untuk detail per skenario).
+Hasil terakhir saat repositori ini disiapkan: **54/54 lulus** (lihat file hasil untuk detail per skenario).
 
 ## Keputusan desain penting
 
@@ -141,6 +190,7 @@ Hasil terakhir saat repositori ini disiapkan: **53/53 lulus** (lihat file hasil 
 - **Audit log** (`audit_logs`): waktu, subjek (`user:<username>` / `service:<client_id>` / `anonymous`), method, endpoint (tanpa query string), device, `allow`/`deny`, alasan, request ID, dan status HTTP akhir. Token, password, dan secret tidak dicatat (diuji). Teks dari client dibersihkan dari karakter kontrol dan dipotong.
 - **Refresh/logout tanpa `X-Device-ID`.** Tabel 3 hanya mensyaratkan refresh token valid, jadi header device tidak diwajibkan di dua endpoint ini. Sebagai gantinya, device yang dipakai saat login disimpan pada refresh token dan harus masih terdaftar/aktif saat refresh.
 - **Service hanya bind ke `127.0.0.1`** (`HOST`), tetapi keamanan **tidak** bergantung pada itu: akses langsung tetap ditolak tanpa gateway secret.
+- **`X-Gateway-Secret` dipasang sebelum proxy, bukan hanya di hook `proxyReq`.** `http-proxy` sengaja tidak memicu event `proxyReq` bila request membawa header `Expect` (lihat `http-proxy/lib/http-proxy/passes/web-incoming.js`), sehingga klien seperti PowerShell/.NET (`Expect: 100-continue`) akan ditolak service. Karena itu gateway menyetel header ke `req.headers` sebelum meneruskan request; nilai dari client selalu ditimpa (diuji pada kasus 20b dan 20e).
 
 ## Keterbatasan
 
