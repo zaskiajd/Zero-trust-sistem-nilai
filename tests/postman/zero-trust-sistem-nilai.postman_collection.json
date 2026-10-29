@@ -1,149 +1,122 @@
 {
   "info": {
+    "_postman_id": "c9f90da4-9195-4a95-83cc-bf7ab394ef1e",
     "name": "Zero Trust Sistem Nilai (Praktikum)",
-    "description": "Koleksi uji API Sistem Nilai dengan prinsip Zero Trust.\n\nCara pakai:\n1. npm run setup && npm run db:init && npm start\n2. npm run postman:env  (membuat environment berisi URL + secret dari .env)\n3. Import file koleksi ini + environment hasil langkah 2 ke Postman.\n4. Pilih environment tersebut, lalu Run collection (urut dari folder 01 ke 06).\n\nJalankan SELURUH koleksi: folder 01 menyimpan token ke variabel yang dipakai folder berikutnya.\nJam akses diuji terpisah: ubah ACCESS_HOURS_START/END di .env, restart, lalu ulangi request PUT/finalisasi.",
+    "description": "Uji API Gateway (PEP) dan kebutuhan 4.1-4.4.\n\nCara pakai:\n1. npm run setup && npm run db:init && npm start\n2. npm run postman:env\n3. Import koleksi ini + tests/postman/local.postman_environment.json, lalu pilih environment tersebut.\n4. Run collection (folder 01 harus jalan lebih dulu karena menyimpan token).\n\nHasil normal: 42 request, 55 assertion, 0 gagal. Jalankan pada jam akses 07:00-21:00 Asia/Jakarta.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
     {
       "key": "baseUrl",
-      "value": "http://127.0.0.1:3000",
-      "type": "default"
+      "value": "http://127.0.0.1:3000"
     },
     {
       "key": "nilaiUrl",
-      "value": "http://127.0.0.1:3001",
-      "type": "default"
+      "value": "http://127.0.0.1:3001"
     },
     {
       "key": "transkripUrl",
-      "value": "http://127.0.0.1:3002",
-      "type": "default"
+      "value": "http://127.0.0.1:3002"
     },
     {
       "key": "password",
-      "value": "Praktikum#2026",
-      "type": "default"
+      "value": "Praktikum#2026"
     },
     {
       "key": "serviceClientId",
-      "value": "service-nilai",
-      "type": "default"
+      "value": "service-nilai"
     },
     {
       "key": "gatewaySecret",
-      "value": "",
-      "type": "secret"
+      "value": ""
     },
     {
       "key": "serviceSecret",
-      "value": "",
-      "type": "secret"
+      "value": ""
     },
     {
       "key": "devAdmin",
-      "value": "DEV-ADMIN-01",
-      "type": "default"
+      "value": "DEV-ADMIN-01"
     },
     {
       "key": "devDosen1",
-      "value": "DEV-DOSEN-01",
-      "type": "default"
+      "value": "DEV-DOSEN-01"
     },
     {
       "key": "devDosen2",
-      "value": "DEV-DOSEN-02",
-      "type": "default"
+      "value": "DEV-DOSEN-02"
     },
     {
       "key": "devMhs1",
-      "value": "DEV-MHS-01",
-      "type": "default"
+      "value": "DEV-MHS-01"
     },
     {
       "key": "devMhs2",
-      "value": "DEV-MHS-02",
-      "type": "default"
+      "value": "DEV-MHS-02"
     },
     {
       "key": "devAsing",
-      "value": "DEV-TIDAK-ADA",
-      "type": "default"
+      "value": "DEV-TIDAK-ADA"
     },
     {
       "key": "nimMhs1",
-      "value": "2210001",
-      "type": "default"
+      "value": "2210001"
     },
     {
       "key": "nimMhs2",
-      "value": "2210002",
-      "type": "default"
+      "value": "2210002"
     },
     {
       "key": "kelasDosen1",
-      "value": "1",
-      "type": "default"
+      "value": "1"
     },
     {
       "key": "kelasDosen2",
-      "value": "2",
-      "type": "default"
+      "value": "2"
     },
     {
       "key": "gradeDosen1",
-      "value": "1",
-      "type": "default"
+      "value": "1"
     },
     {
       "key": "gradeDosen2",
-      "value": "4",
-      "type": "default"
+      "value": "4"
     },
     {
       "key": "tokenPalsu",
-      "value": "token.palsu.sekali",
-      "type": "default"
+      "value": "token.palsu.sekali"
     },
     {
       "key": "dosen1Token",
-      "value": "",
-      "type": "default"
+      "value": ""
     },
     {
       "key": "dosen2Token",
-      "value": "",
-      "type": "default"
+      "value": ""
     },
     {
       "key": "mhs1Token",
-      "value": "",
-      "type": "default"
+      "value": ""
     },
     {
       "key": "mhs2Token",
-      "value": "",
-      "type": "default"
+      "value": ""
     },
     {
       "key": "adminToken",
-      "value": "",
-      "type": "default"
+      "value": ""
     },
     {
       "key": "serviceToken",
-      "value": "",
-      "type": "default"
+      "value": ""
     },
     {
       "key": "mhs1Refresh",
-      "value": "",
-      "type": "default"
+      "value": ""
     },
     {
       "key": "refreshAccessToken",
-      "value": "",
-      "type": "default"
+      "value": ""
     }
   ],
   "item": [
@@ -191,7 +164,8 @@
                 "type": "text/javascript"
               }
             }
-          ]
+          ],
+          "response": []
         },
         {
           "name": "Login dosen2 (device terdaftar)",
@@ -230,7 +204,8 @@
                 "type": "text/javascript"
               }
             }
-          ]
+          ],
+          "response": []
         },
         {
           "name": "Login mhs1 (device terdaftar)",
@@ -273,7 +248,8 @@
                 "type": "text/javascript"
               }
             }
-          ]
+          ],
+          "response": []
         },
         {
           "name": "Login mhs2 (device terdaftar)",
@@ -312,7 +288,8 @@
                 "type": "text/javascript"
               }
             }
-          ]
+          ],
+          "response": []
         },
         {
           "name": "Login admin (device terdaftar)",
@@ -351,7 +328,8 @@
                 "type": "text/javascript"
               }
             }
-          ]
+          ],
+          "response": []
         },
         {
           "name": "Login password salah -> 401",
@@ -389,7 +367,8 @@
                 "type": "text/javascript"
               }
             }
-          ]
+          ],
+          "response": []
         },
         {
           "name": "Login device tidak terdaftar -> 403",
@@ -427,7 +406,8 @@
                 "type": "text/javascript"
               }
             }
-          ]
+          ],
+          "response": []
         },
         {
           "name": "GET /nilai tanpa access token -> 401",
@@ -452,7 +432,8 @@
                 "type": "text/javascript"
               }
             }
-          ]
+          ],
+          "response": []
         },
         {
           "name": "POST /auth/service (client id + secret valid)",
@@ -489,7 +470,8 @@
                 "type": "text/javascript"
               }
             }
-          ]
+          ],
+          "response": []
         },
         {
           "name": "POST /auth/service kredensial salah -> 401",
@@ -523,7 +505,8 @@
                 "type": "text/javascript"
               }
             }
-          ]
+          ],
+          "response": []
         },
         {
           "name": "Refresh token -> access token baru",
@@ -558,7 +541,8 @@
                 "type": "text/javascript"
               }
             }
-          ]
+          ],
+          "response": []
         },
         {
           "name": "Pakai access token hasil refresh -> 200",
@@ -587,7 +571,8 @@
                 "type": "text/javascript"
               }
             }
-          ]
+          ],
+          "response": []
         },
         {
           "name": "Logout -> refresh token dicabut",
@@ -621,7 +606,8 @@
                 "type": "text/javascript"
               }
             }
-          ]
+          ],
+          "response": []
         },
         {
           "name": "Refresh setelah logout -> 401",
@@ -655,7 +641,8 @@
                 "type": "text/javascript"
               }
             }
-          ]
+          ],
+          "response": []
         }
       ]
     },
@@ -692,7 +679,8 @@
                 "type": "text/javascript"
               }
             }
-          ]
+          ],
+          "response": []
         },
         {
           "name": "Mahasiswa meminta nilai mahasiswa lain -> 403",
@@ -721,7 +709,8 @@
                 "type": "text/javascript"
               }
             }
-          ]
+          ],
+          "response": []
         },
         {
           "name": "Dosen: hanya kelas yang diampu",
@@ -752,7 +741,8 @@
                 "type": "text/javascript"
               }
             }
-          ]
+          ],
+          "response": []
         },
         {
           "name": "Dosen meminta kelas dosen lain -> 403",
@@ -781,7 +771,8 @@
                 "type": "text/javascript"
               }
             }
-          ]
+          ],
+          "response": []
         },
         {
           "name": "Dosen mengubah nilai kelas dosen lain -> 403",
@@ -823,7 +814,8 @@
                 "type": "text/javascript"
               }
             }
-          ]
+          ],
+          "response": []
         },
         {
           "name": "Dosen mengubah nilai kelasnya (belum final) -> 200",
@@ -865,7 +857,8 @@
                 "type": "text/javascript"
               }
             }
-          ]
+          ],
+          "response": []
         },
         {
           "name": "Validasi nilai di luar 0-100 -> 400",
@@ -907,7 +900,8 @@
                 "type": "text/javascript"
               }
             }
-          ]
+          ],
+          "response": []
         },
         {
           "name": "Mahasiswa mengubah nilai -> 403",
@@ -949,7 +943,8 @@
                 "type": "text/javascript"
               }
             }
-          ]
+          ],
+          "response": []
         },
         {
           "name": "Admin tidak berhak GET /nilai -> 403",
@@ -978,7 +973,8 @@
                 "type": "text/javascript"
               }
             }
-          ]
+          ],
+          "response": []
         }
       ]
     },
@@ -1015,7 +1011,8 @@
                 "type": "text/javascript"
               }
             }
-          ]
+          ],
+          "response": []
         },
         {
           "name": "Nilai yang sudah final tidak dapat diubah -> 403",
@@ -1057,7 +1054,8 @@
                 "type": "text/javascript"
               }
             }
-          ]
+          ],
+          "response": []
         },
         {
           "name": "Dosen lain finalisasi kelas ini -> 403",
@@ -1086,7 +1084,8 @@
                 "type": "text/javascript"
               }
             }
-          ]
+          ],
+          "response": []
         },
         {
           "name": "Mahasiswa finalisasi kelas -> 403",
@@ -1115,7 +1114,8 @@
                 "type": "text/javascript"
               }
             }
-          ]
+          ],
+          "response": []
         },
         {
           "name": "Token user ke /transkrip/sinkron -> 403",
@@ -1157,7 +1157,8 @@
                 "type": "text/javascript"
               }
             }
-          ]
+          ],
+          "response": []
         },
         {
           "name": "Token service ke /transkrip/sinkron -> 200 (idempoten)",
@@ -1196,7 +1197,8 @@
                 "type": "text/javascript"
               }
             }
-          ]
+          ],
+          "response": []
         }
       ]
     },
@@ -1231,7 +1233,8 @@
                 "type": "text/javascript"
               }
             }
-          ]
+          ],
+          "response": []
         },
         {
           "name": "Mahasiswa melihat transkrip NIM lain -> 403",
@@ -1260,7 +1263,8 @@
                 "type": "text/javascript"
               }
             }
-          ]
+          ],
+          "response": []
         },
         {
           "name": "Admin melihat transkrip mahasiswa mana pun -> 200",
@@ -1289,7 +1293,8 @@
                 "type": "text/javascript"
               }
             }
-          ]
+          ],
+          "response": []
         },
         {
           "name": "Dosen tidak berhak melihat transkrip -> 403",
@@ -1318,7 +1323,8 @@
                 "type": "text/javascript"
               }
             }
-          ]
+          ],
+          "response": []
         },
         {
           "name": "Token service tidak berhak membaca transkrip -> 403",
@@ -1343,7 +1349,8 @@
                 "type": "text/javascript"
               }
             }
-          ]
+          ],
+          "response": []
         }
       ]
     },
@@ -1373,7 +1380,8 @@
                 "type": "text/javascript"
               }
             }
-          ]
+          ],
+          "response": []
         },
         {
           "name": "Langsung ke Service Transkrip tanpa gateway secret -> 403",
@@ -1398,7 +1406,8 @@
                 "type": "text/javascript"
               }
             }
-          ]
+          ],
+          "response": []
         },
         {
           "name": "Gateway secret benar tetapi token tidak valid -> 401",
@@ -1430,7 +1439,8 @@
                 "type": "text/javascript"
               }
             }
-          ]
+          ],
+          "response": []
         },
         {
           "name": "Gateway secret salah -> 403",
@@ -1459,7 +1469,8 @@
                 "type": "text/javascript"
               }
             }
-          ]
+          ],
+          "response": []
         },
         {
           "name": "Client tidak bisa memalsukan X-Gateway-Secret lewat gateway -> 200",
@@ -1492,7 +1503,8 @@
                 "type": "text/javascript"
               }
             }
-          ]
+          ],
+          "response": []
         }
       ]
     },
@@ -1526,7 +1538,8 @@
                 "type": "text/javascript"
               }
             }
-          ]
+          ],
+          "response": []
         },
         {
           "name": "Metode tak dikenal -> 403",
@@ -1555,7 +1568,8 @@
                 "type": "text/javascript"
               }
             }
-          ]
+          ],
+          "response": []
         },
         {
           "name": "Path tanpa parameter wajib -> 403",
@@ -1584,7 +1598,8 @@
                 "type": "text/javascript"
               }
             }
-          ]
+          ],
+          "response": []
         }
       ]
     }

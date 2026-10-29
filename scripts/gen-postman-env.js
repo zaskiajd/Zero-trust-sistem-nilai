@@ -18,7 +18,7 @@ function labPassword() {
 const cfg = loadConfig();
 
 const env = {
-  id: 'a7f3c1e2-5b64-4d8a-9c10-zero-trust-sni',
+  id: '3f2b8c41-7d5e-4a90-b6c2-1d8f4e7a2c55',
   name: 'Zero Trust Sistem Nilai - Lokal',
   values: [
     { key: 'baseUrl', value: cfg.urls.gateway, type: 'default', enabled: true },
