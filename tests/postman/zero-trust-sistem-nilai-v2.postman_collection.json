@@ -1,0 +1,2237 @@
+{
+  "info": {
+    "_postman_id": "c9f90da4-9195-4a95-83cc-bf7ab394ef1e",
+    "name": "Zero Trust Sistem Nilai (Praktikum) v2",
+    "description": "Versi koleksi: v7 (lihat Postman Console setelah menjalankan \"00 - Diagnostik\").\n\nUji API Gateway (PEP) dan kebutuhan 4.1-4.4.\n\nADA 2 CARA PAKAI\n\nA. OTOMATIS (disarankan, tanpa copy-paste):\n   1) Tab Authorization setiap request = No Auth (sudah begitu di file ini).\n   2) Cukup Send request mana pun. Pre-request mengisi header \"Bearer {{mhs1Token}}\" dengan token asli.\n      Kalau token kosong/kedaluwarsa, pre-request login sendiri (auto-heal) memakai akun seed.\n   3) Opsional: Send \"00 - Diagnostik & Login mhs1\" untuk melihat ringkasan di Postman Console (Ctrl+Alt+C).\n\nB. MANUAL (tempel token):\n   1) Send request login, copy nilai \"access_token\" dari response.\n   2) Tab Authorization request tujuan -> Bearer Token -> tempel access_token (tanpa kata \"Bearer\").\n   3) Hapus header Authorization request itu agar tidak dobel.\n   4) Send. Access token berlaku 10 menit; kalau 401, login dan tempel lagi.\n\nCatatan: tab Authorization MENIMPA header Authorization. Jangan pakai keduanya sekaligus.\n\nPrasyarat: npm run setup && npm run db:init && npm start, lalu npm run postman:env dan\nImport tests/postman/local.postman_environment.json (berisi gatewaySecret & serviceSecret).\nTanpa environment, login tetap jalan tetapi POST /auth/service akan 401.\n\nHasil normal: 48 request, 67 assertion, 0 gagal. Jalankan pada jam akses 07:00-21:00 Asia/Jakarta.\n\nUrutan folder:\n00 - Diagnostik & Login mhs1\n01 - Autentikasi & Token\n02 - Nilai (kebijakan akses)\n03 - Finalisasi & sinkronisasi transkrip\n04 - Transkrip\n05 - Akses langsung ke service (assume breach)\n06 - Default deny",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:3000"
+    },
+    {
+      "key": "nilaiUrl",
+      "value": "http://127.0.0.1:3001"
+    },
+    {
+      "key": "transkripUrl",
+      "value": "http://127.0.0.1:3002"
+    },
+    {
+      "key": "password",
+      "value": "Praktikum#2026"
+    },
+    {
+      "key": "serviceClientId",
+      "value": "service-nilai"
+    },
+    {
+      "key": "gatewaySecret",
+      "value": ""
+    },
+    {
+      "key": "serviceSecret",
+      "value": ""
+    },
+    {
+      "key": "devAdmin",
+      "value": "DEV-ADMIN-01"
+    },
+    {
+      "key": "devDosen1",
+      "value": "DEV-DOSEN-01"
+    },
+    {
+      "key": "devDosen2",
+      "value": "DEV-DOSEN-02"
+    },
+    {
+      "key": "devMhs1",
+      "value": "DEV-MHS-01"
+    },
+    {
+      "key": "devMhs2",
+      "value": "DEV-MHS-02"
+    },
+    {
+      "key": "devAsing",
+      "value": "DEV-TIDAK-ADA"
+    },
+    {
+      "key": "nimMhs1",
+      "value": "2210001"
+    },
+    {
+      "key": "nimMhs2",
+      "value": "2210002"
+    },
+    {
+      "key": "kelasDosen1",
+      "value": "1"
+    },
+    {
+      "key": "kelasDosen2",
+      "value": "2"
+    },
+    {
+      "key": "gradeDosen1",
+      "value": "1"
+    },
+    {
+      "key": "gradeDosen2",
+      "value": "4"
+    },
+    {
+      "key": "tokenPalsu",
+      "value": "token.palsu.sekali"
+    },
+    {
+      "key": "dosen1Token",
+      "value": ""
+    },
+    {
+      "key": "dosen2Token",
+      "value": ""
+    },
+    {
+      "key": "mhs1Token",
+      "value": ""
+    },
+    {
+      "key": "mhs2Token",
+      "value": ""
+    },
+    {
+      "key": "adminToken",
+      "value": ""
+    },
+    {
+      "key": "serviceToken",
+      "value": ""
+    },
+    {
+      "key": "mhs1Refresh",
+      "value": ""
+    },
+    {
+      "key": "refreshAccessToken",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "00 - Diagnostik & Login mhs1 (klik ini dulu)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Device-ID",
+            "value": "{{devMhs1}}"
+          }
+        ],
+        "url": "{{baseUrl}}/auth/login",
+        "description": "Klik Send pada request ini SATU KALI. Ia login sebagai mhs1, menyimpan token ke collection + environment + globals, lalu mencoba GET /nilai dengan token itu. Buka Postman Console (Ctrl+Alt+C) untuk melihat log [ZT].",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"mhs1\",\n  \"password\": \"{{password}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// [ZT] Diagnostik koleksi v7",
+              "function short(v) { if (!v) return '(kosong)'; v = String(v).replace(/^Bearer\\s+/i, ''); return v.slice(0, 12) + '...(' + v.length + ' char)'; }",
+              "function save3(k, v) {",
+              "  if (!v) return;",
+              "  try { pm.collectionVariables.set(k, v); } catch (e) {}",
+              "  try { pm.environment.set(k, v); } catch (e) {}",
+              "  try { pm.globals.set(k, v); } catch (e) {}",
+              "}",
+              "function jam(t) { try { var p = JSON.parse(atob(String(t).split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))); return Math.round((p.exp - Date.now()/1000) / 60); } catch (e) { return null; } }",
+              "pm.test('login mhs1 -> 200', function () { pm.response.to.have.status(200); });",
+              "var b = {}; try { b = pm.response.json(); } catch (e) {}",
+              "save3('mhs1Token', b.access_token);",
+              "save3('mhs1Refresh', b.refresh_token);",
+              "console.log('[ZT] versi koleksi: v7');",
+              "console.log('[ZT] token baru: ' + short(b.access_token) + ' | berlaku ~' + jam(b.access_token) + ' menit');",
+              "console.log('[ZT] scope collection : ' + short(pm.collectionVariables.get('mhs1Token')));",
+              "console.log('[ZT] scope environment: ' + short(pm.environment ? pm.environment.get('mhs1Token') : '(environment tidak dipilih)') + ' | nama env: ' + (pm.environment && pm.environment.name ? pm.environment.name : '(tidak dipilih)'));",
+              "console.log('[ZT] scope globals    : ' + short(pm.globals.get('mhs1Token')));",
+              "console.log('[ZT] pm.variables     : ' + short(pm.variables.get('mhs1Token')));",
+              "console.log('[ZT] serviceSecret    : ' + (pm.variables.get('serviceSecret') ? 'ada' : 'KOSONG -> POST /auth/service akan 401 (jalankan npm run postman:env / pilih environment)'));",
+              "pm.test('token tersimpan', function () { pm.expect(short(pm.collectionVariables.get('mhs1Token')) !== '(kosong)').to.eql(true); });",
+              "pm.sendRequest({",
+              "  url: String(pm.variables.get('baseUrl')) + '/nilai',",
+              "  method: 'GET',",
+              "  header: { Authorization: 'Bearer ' + b.access_token, 'X-Device-ID': String(pm.variables.get('devMhs1')) }",
+              "}, function (err, res) {",
+              "  if (err) { console.log('[ZT] GET /nilai GAGAL: ' + err); return; }",
+              "  console.log('[ZT] GET /nilai -> ' + res.code + ' | ' + String(res.text()).slice(0, 140));",
+              "  console.log('[ZT] selesai. Request lain cukup di-Send; token diisi otomatis (auto-heal kalau kosong/kedaluwarsa).');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "response": []
+    },
+    {
+      "name": "01 - Autentikasi & Token",
+      "item": [
+        {
+          "name": "Login dosen1 (device terdaftar)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Device-ID",
+                "value": "{{devDosen1}}"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/login",
+            "description": "Access token 10 menit + refresh token 1 hari. Token disimpan ke variabel dosen1Token.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"dosen1\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "function saveVar(k, v) { if (v === undefined || v === null || v === '') return; pm.collectionVariables.set(k, v); try { pm.environment.set(k, v); } catch (e) {} try { pm.globals.set(k, v); } catch (e) {} }",
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.test('access token 10 menit', () => pm.expect(b.expires_in).to.eql(600));",
+                  "pm.test('refresh token 1 hari', () => pm.expect(b.refresh_expires_in).to.eql(86400));",
+                  "pm.test('role dosen', () => pm.expect(b.user.role).to.eql('dosen'));",
+                  "saveVar('dosen1Token', b.access_token);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Login dosen2 (device terdaftar)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Device-ID",
+                "value": "{{devDosen2}}"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/login",
+            "description": "Login dosen2 dengan device DEV-DOSEN-02 (terdaftar di DB). Header X-Device-ID wajib dan harus cocok dengan device yang terdaftar untuk akun ini. Body: {username, password}. Status 200 mengembalikan access_token yang disimpan ke variabel dosen2Token. Token ini dipakai folder 03 untuk skenario finalisasi kelas 2 dan uji nilai final tidak dapat diubah. Membuktikan: never trust, always verify — device diverifikasi setiap login.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"dosen2\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "function saveVar(k, v) { if (v === undefined || v === null || v === '') return; pm.collectionVariables.set(k, v); try { pm.environment.set(k, v); } catch (e) {} try { pm.globals.set(k, v); } catch (e) {} }",
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "saveVar('dosen2Token', pm.response.json().access_token);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Login mhs1 (device terdaftar)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Device-ID",
+                "value": "{{devMhs1}}"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/login",
+            "description": "Menyimpan access token dan refresh token mhs1 untuk uji refresh/logout.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"mhs1\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "function saveVar(k, v) { if (v === undefined || v === null || v === '') return; pm.collectionVariables.set(k, v); try { pm.environment.set(k, v); } catch (e) {} try { pm.globals.set(k, v); } catch (e) {} }",
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.test('role mahasiswa', () => pm.expect(b.user.role).to.eql('mahasiswa'));",
+                  "pm.test('NIM sesuai seed', () => pm.expect(b.user.nim).to.eql(pm.variables.get('nimMhs1')));",
+                  "saveVar('mhs1Token', b.access_token);",
+                  "saveVar('mhs1Refresh', b.refresh_token);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Login mhs2 (device terdaftar)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Device-ID",
+                "value": "{{devMhs2}}"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/login",
+            "description": "Login mhs2 dengan device DEV-MHS-02 (terdaftar di DB). Header X-Device-ID wajib — gateway memverifikasi device ini cocok dengan akun mhs2. Body: {username, password}. Status 200 mengembalikan access_token yang disimpan ke variabel mhs2Token. Token ini dipakai folder 04 untuk uji akses transkrip NIM lain (mhs2 vs mhs1). Membuktikan: never trust, always verify — setiap login diverifikasi ulang.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"mhs2\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "function saveVar(k, v) { if (v === undefined || v === null || v === '') return; pm.collectionVariables.set(k, v); try { pm.environment.set(k, v); } catch (e) {} try { pm.globals.set(k, v); } catch (e) {} }",
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "saveVar('mhs2Token', pm.response.json().access_token);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Login admin (device terdaftar)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Device-ID",
+                "value": "{{devAdmin}}"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/login",
+            "description": "Login admin dengan device DEV-ADMIN-01 (terdaftar di DB). Header X-Device-ID wajib — gateway memverifikasi device ini cocok dengan akun admin. Body: {username, password}. Status 200 mengembalikan access_token yang disimpan ke variabel adminToken. Admin hanya boleh akses /transkrip, tidak boleh akses /nilai (least privilege antar role). Membuktikan: never trust, always verify — device + kredensial diverifikasi setiap login.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "function saveVar(k, v) { if (v === undefined || v === null || v === '') return; pm.collectionVariables.set(k, v); try { pm.environment.set(k, v); } catch (e) {} try { pm.globals.set(k, v); } catch (e) {} }",
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "saveVar('adminToken', pm.response.json().access_token);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Login password salah -> 401",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Device-ID",
+                "value": "{{devMhs1}}"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/login",
+            "description": "Mengirim password yang salah (\"salah\") untuk akun mhs1 dengan device terdaftar DEV-MHS-01. Gateway memverifikasi kredensial menggunakan perbandingan hash scrypt waktu konstan — password tidak cocok sehingga ditolak. Status 401 Unauthorized dikembalikan tanpa petunjuk apakah username atau password yang salah. Tidak ada token yang disimpan. Membuktikan: never trust, always verify — kredensial selalu diverifikasi penuh.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"mhs1\",\n  \"password\": \"salah\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 401', () => pm.response.to.have.status(401));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Login device tidak terdaftar -> 403",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Device-ID",
+                "value": "{{devAsing}}"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/login",
+            "description": "Mengirim login dengan X-Device-ID: DEV-TIDAK-ADA yang tidak terdaftar di database untuk akun mhs1. Password benar, namun device tidak cocok — gateway memeriksa relasi user↔device di DB dan menolak. Status 403 Forbidden. Tidak ada token yang diterbitkan meskipun kredensial valid. Membuktikan: kontrol perangkat terdaftar — kepemilikan device adalah faktor autentikasi kedua (never trust, always verify).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"mhs1\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "GET /nilai tanpa access token -> 401",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Device-ID",
+                "value": "{{devMhs1}}"
+              }
+            ],
+            "url": "{{baseUrl}}/nilai",
+            "description": "Request GET /nilai tanpa header Authorization sama sekali (hanya X-Device-ID). Gateway memeriksa keberadaan token sebelum meneruskan ke service — tidak ada token berarti identitas tidak diketahui. Status 401 Unauthorized dikembalikan. Membuktikan: semua endpoint selain /auth/* wajib membawa access token yang valid (never trust, always verify — setiap request diverifikasi ulang)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 401', () => pm.response.to.have.status(401));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "POST /auth/service (client id + secret valid)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/service",
+            "description": "Token service berlaku 5 menit dengan role service. Disimpan ke serviceToken.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"client_id\": \"{{serviceClientId}}\",\n  \"client_secret\": \"{{serviceSecret}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "function saveVar(k, v) { if (v === undefined || v === null || v === '') return; pm.collectionVariables.set(k, v); try { pm.environment.set(k, v); } catch (e) {} try { pm.globals.set(k, v); } catch (e) {} }",
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.test('token service 5 menit', () => pm.expect(b.expires_in).to.eql(300));",
+                  "saveVar('serviceToken', b.access_token);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "POST /auth/service kredensial salah -> 401",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/service",
+            "description": "Meminta token service dengan client_secret yang salah (\"secret-palsu\") untuk client_id yang benar (service-nilai). Gateway memverifikasi secret menggunakan perbandingan waktu konstan — tidak cocok, ditolak. Status 401 Unauthorized. Tidak ada token service yang diterbitkan. Membuktikan: autentikasi service-to-service juga diverifikasi penuh (never trust, always verify — tidak ada kepercayaan implisit antar komponen internal).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"client_id\": \"{{serviceClientId}}\",\n  \"client_secret\": \"secret-palsu\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 401', () => pm.response.to.have.status(401));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Refresh token -> access token baru",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/refresh",
+            "description": "Mengirim refresh token mhs1 (dari variabel mhs1Refresh) ke /auth/refresh. Gateway memverifikasi token: belum kedaluwarsa, belum dicabut (revoked_at null), dan hash SHA-256-nya cocok di DB. Jika valid, menerbitkan access token baru yang disimpan ke variabel refreshAccessToken. Tidak perlu login ulang dengan password. Membuktikan: token hidup singkat — refresh token memungkinkan perpanjangan sesi tanpa mengekspos password.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh_token\": \"{{mhs1Refresh}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "function saveVar(k, v) { if (v === undefined || v === null || v === '') return; pm.collectionVariables.set(k, v); try { pm.environment.set(k, v); } catch (e) {} try { pm.globals.set(k, v); } catch (e) {} }",
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "saveVar('refreshAccessToken', pm.response.json().access_token);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Pakai access token hasil refresh -> 200",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{refreshAccessToken}}"
+              },
+              {
+                "key": "X-Device-ID",
+                "value": "{{devMhs1}}"
+              }
+            ],
+            "url": "{{baseUrl}}/nilai",
+            "description": "Membuktikan bahwa access token baru dari hasil refresh (variabel refreshAccessToken) dapat digunakan untuk mengakses /nilai. Header Authorization: Bearer {{refreshAccessToken}} dan X-Device-ID: DEV-MHS-01. Gateway memverifikasi tanda tangan JWT, masa berlaku, dan role. Status 200 mengkonfirmasi token hasil refresh valid dan dapat digunakan layaknya token login biasa."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Logout -> refresh token dicabut",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/logout",
+            "description": "Mengirim refresh token mhs1 (variabel mhs1Refresh) ke /auth/logout. Server mencabut token di database dengan mengisi kolom revoked_at — bukan sekadar hapus di sisi client. Status 200. Setelah ini, token yang sama tidak bisa dipakai untuk refresh maupun akses baru. Membuktikan: pencabutan token efektif di sisi server (assume breach — bahkan token yang bocor pun dapat dinonaktifkan).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh_token\": \"{{mhs1Refresh}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Refresh setelah logout -> 401",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/refresh",
+            "description": "Mencoba refresh dengan token mhs1 yang sama setelah logout. Server menemukan token sudah dicabut (revoked_at tidak null di DB), menolak dengan 401 Unauthorized. Membuktikan: logout efektif di sisi server — token yang sudah dicabut tidak bisa dipakai lagi meskipun belum kedaluwarsa. Prinsip: assume breach — pencabutan token aktif melindungi jika token bocor.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh_token\": \"{{mhs1Refresh}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 401', () => pm.response.to.have.status(401));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "02 - Nilai (kebijakan akses)",
+      "item": [
+        {
+          "name": "Siapkan token (login semua akun)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Device-ID",
+                "value": "{{devMhs1}}"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/login",
+            "description": "Menyegarkan token semua akun agar folder ini bisa dijalankan mandiri, tanpa copy-paste token. Collection Runner menjalankannya otomatis karena berada di urutan pertama folder. Jika menguji satu request secara manual, klik Send pada request ini lebih dulu.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"mhs1\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var base = pm.variables.get('baseUrl');",
+                  "var pw = pm.variables.get('password');",
+                  "function save(k, v) { if (!v) return; pm.collectionVariables.set(k, v); try { pm.environment.set(k, v); } catch (e) {} try { pm.globals.set(k, v); } catch (e) {} }",
+                  "var b = {}; try { b = pm.response.json(); } catch (e) {}",
+                  "save('mhs1Token', b.access_token); save('mhs1Refresh', b.refresh_token);",
+                  "function login(u, dev, k) {",
+                  "  pm.sendRequest({ url: base + '/auth/login', method: 'POST', header: { 'Content-Type': 'application/json', 'X-Device-ID': pm.variables.get(dev) }, body: { mode: 'raw', raw: JSON.stringify({ username: u, password: pw }) } }, function (err, res) {",
+                  "    if (!err && res && res.code === 200) { var j = res.json(); save(k, j.access_token); if (k === 'mhs1Token') save('mhs1Refresh', j.refresh_token); }",
+                  "  });",
+                  "}",
+                  "login('dosen1', 'devDosen1', 'dosen1Token');",
+                  "login('dosen2', 'devDosen2', 'dosen2Token');",
+                  "login('mhs2', 'devMhs2', 'mhs2Token');",
+                  "login('admin', 'devAdmin', 'adminToken');",
+                  "pm.sendRequest({ url: base + '/auth/service', method: 'POST', header: { 'Content-Type': 'application/json' }, body: { mode: 'raw', raw: JSON.stringify({ client_id: pm.variables.get('serviceClientId'), client_secret: pm.variables.get('serviceSecret') }) } }, function (err, res) {",
+                  "  if (!err && res && res.code === 200) save('serviceToken', res.json().access_token);",
+                  "});",
+                  "// Verifikasi di akhir: pastikan token benar-benar tersimpan.",
+                  "pm.test('Siapkan token: login mhs1 berhasil (200)', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Siapkan token: mhs1Token tersimpan', function () { pm.expect(!!pm.collectionVariables.get('mhs1Token')).to.eql(true); });",
+                  "if (typeof console !== 'undefined') console.log('[Siapkan token] mhs1Token=' + (pm.collectionVariables.get('mhs1Token') ? 'ada' : 'KOSONG'));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Mahasiswa: hanya nilai miliknya",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{mhs1Token}}"
+              },
+              {
+                "key": "X-Device-ID",
+                "value": "{{devMhs1}}"
+              }
+            ],
+            "url": "{{baseUrl}}/nilai",
+            "description": "mhs1 (NIM 2210001) mengakses GET /nilai dengan token dan device terdaftar. Gateway memeriksa kebijakan: role mahasiswa hanya boleh melihat nilai miliknya sendiri. Service Nilai memfilter data berdasarkan NIM dari token JWT. Status 200 dengan data yang seluruh barisnya memiliki NIM 2210001. Membuktikan: least privilege — mahasiswa tidak dapat melihat nilai mahasiswa lain."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const d = pm.response.json().data;",
+                  "pm.test('semua baris milik NIM sendiri', () => pm.expect(d.every((r) => r.nim === pm.variables.get('nimMhs1'))).to.eql(true));",
+                  "pm.test('ada data', () => pm.expect(d.length).to.be.above(0));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Mahasiswa meminta nilai mahasiswa lain -> 403",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{mhs1Token}}"
+              },
+              {
+                "key": "X-Device-ID",
+                "value": "{{devMhs1}}"
+              }
+            ],
+            "url": "{{baseUrl}}/nilai?nim={{nimMhs2}}",
+            "description": "mhs1 (NIM 2210001) menambahkan query ?nim=2210002 untuk meminta nilai mhs2. Gateway membaca kebijakan di policy.js: mahasiswa hanya boleh mengakses NIM miliknya sendiri — NIM dari query tidak cocok dengan NIM di token JWT. Ditolak 403 Forbidden tanpa meneruskan ke service. Membuktikan: least privilege pada data — filter query tidak dapat digunakan untuk melampaui batas akses."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Dosen: hanya kelas yang diampu",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{dosen1Token}}"
+              },
+              {
+                "key": "X-Device-ID",
+                "value": "{{devDosen1}}"
+              }
+            ],
+            "url": "{{baseUrl}}/nilai",
+            "description": "dosen1 (pengampu kelas 1 - IF301 Keamanan Informasi) mengakses GET /nilai. Gateway memverifikasi token dan meneruskan ke Service Nilai. Service memeriksa relasi pengampu di DB dan memfilter hanya nilai kelas yang diampu dosen1 (kelas 1). Status 200, semua baris memiliki kode_mk IF301. Membuktikan: least privilege — dosen hanya melihat nilai kelas yang menjadi tanggung jawabnya."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const d = pm.response.json().data;",
+                  "pm.test('semua baris kelas IF301', () => pm.expect(d.every((r) => r.kode_mk === 'IF301')).to.eql(true));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Dosen meminta kelas dosen lain -> 403",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{dosen1Token}}"
+              },
+              {
+                "key": "X-Device-ID",
+                "value": "{{devDosen1}}"
+              }
+            ],
+            "url": "{{baseUrl}}/nilai?kelas_id={{kelasDosen2}}",
+            "description": "dosen1 (pengampu kelas 1) menambahkan query ?kelas_id=2 untuk meminta nilai kelas dosen2. Gateway memeriksa relasi pengampu di DB: dosen1 bukan pengampu kelas 2 (kelas 2 diampu dosen2). Ditolak 403 Forbidden. Membuktikan: least privilege pada data — dosen tidak dapat meminta kelas yang bukan tanggung jawabnya meskipun menggunakan filter query yang sah."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Dosen mengubah nilai kelas dosen lain -> 403",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{dosen1Token}}"
+              },
+              {
+                "key": "X-Device-ID",
+                "value": "{{devDosen1}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/nilai/{{gradeDosen2}}",
+            "description": "dosen1 mencoba PUT /nilai/4 menggunakan dosen1Token. Grade ID 4 berada di kelas 2 yang diampu dosen2. Gateway memeriksa relasi pengampu: dosen1 bukan pemilik kelas dari grade tersebut. Ditolak 403 Forbidden. Body {\"nilai\": 100} tidak sampai ke service. Membuktikan: least privilege — batas akses write juga diberlakukan per kelas, bukan hanya per role.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nilai\": 100\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Dosen mengubah nilai kelasnya (belum final) -> 200",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{dosen1Token}}"
+              },
+              {
+                "key": "X-Device-ID",
+                "value": "{{devDosen1}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/nilai/{{gradeDosen1}}",
+            "description": "dosen1 mengubah grade ID 1 (kelas 1, miliknya) yang belum final. Header Authorization: Bearer dosen1Token dan X-Device-ID: DEV-DOSEN-01. Body: {\"nilai\": 92} — nilai valid dalam rentang 0-100. Gateway memverifikasi token, role, kepemilikan kelas, status final, dan jam akses (07:00-21:00). Semua kondisi terpenuhi, status 200. Membuktikan: akses sah berjalan normal — kontrol hanya memblokir yang tidak sah.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nilai\": 92\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200 (jalankan dalam jam akses 07:00-21:00 Asia/Jakarta)', () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Validasi nilai di luar 0-100 -> 400",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{dosen1Token}}"
+              },
+              {
+                "key": "X-Device-ID",
+                "value": "{{devDosen1}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/nilai/{{gradeDosen1}}",
+            "description": "dosen1 mengirim body {\"nilai\": 150} untuk grade di kelasnya sendiri. Gateway mengizinkan request (akses sah), namun Service Nilai menolak dengan 400 Bad Request karena nilai harus berada dalam rentang 0-100. Otorisasi lolos di gateway, validasi data dilakukan di service. Membuktikan: validasi data di sisi server — input tidak valid ditolak meskipun pengguna memiliki hak akses.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nilai\": 150\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Mahasiswa mengubah nilai -> 403",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{mhs1Token}}"
+              },
+              {
+                "key": "X-Device-ID",
+                "value": "{{devMhs1}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/nilai/{{gradeDosen1}}",
+            "description": "mhs1 mencoba PUT /nilai/1 menggunakan mhs1Token. Gateway memeriksa kebijakan di policy.js: endpoint PUT /nilai/:id hanya diizinkan untuk role dosen. Mahasiswa tidak memiliki izin write pada nilai. Ditolak 403 Forbidden sebelum sampai ke service. Membuktikan: least privilege berdasarkan role — mahasiswa hanya boleh membaca nilai, tidak boleh mengubah.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nilai\": 100\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Admin tidak berhak GET /nilai -> 403",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "X-Device-ID",
+                "value": "{{devAdmin}}"
+              }
+            ],
+            "url": "{{baseUrl}}/nilai",
+            "description": "Least privilege: Tabel 3 hanya mengizinkan mahasiswa dan dosen."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "03 - Finalisasi & sinkronisasi transkrip",
+      "item": [
+        {
+          "name": "Siapkan token (login semua akun)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Device-ID",
+                "value": "{{devMhs1}}"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/login",
+            "description": "Menyegarkan token semua akun agar folder ini bisa dijalankan mandiri, tanpa copy-paste token. Collection Runner menjalankannya otomatis karena berada di urutan pertama folder. Jika menguji satu request secara manual, klik Send pada request ini lebih dulu.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"mhs1\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var base = pm.variables.get('baseUrl');",
+                  "var pw = pm.variables.get('password');",
+                  "function save(k, v) { if (!v) return; pm.collectionVariables.set(k, v); try { pm.environment.set(k, v); } catch (e) {} try { pm.globals.set(k, v); } catch (e) {} }",
+                  "var b = {}; try { b = pm.response.json(); } catch (e) {}",
+                  "save('mhs1Token', b.access_token); save('mhs1Refresh', b.refresh_token);",
+                  "function login(u, dev, k) {",
+                  "  pm.sendRequest({ url: base + '/auth/login', method: 'POST', header: { 'Content-Type': 'application/json', 'X-Device-ID': pm.variables.get(dev) }, body: { mode: 'raw', raw: JSON.stringify({ username: u, password: pw }) } }, function (err, res) {",
+                  "    if (!err && res && res.code === 200) { var j = res.json(); save(k, j.access_token); if (k === 'mhs1Token') save('mhs1Refresh', j.refresh_token); }",
+                  "  });",
+                  "}",
+                  "login('dosen1', 'devDosen1', 'dosen1Token');",
+                  "login('dosen2', 'devDosen2', 'dosen2Token');",
+                  "login('mhs2', 'devMhs2', 'mhs2Token');",
+                  "login('admin', 'devAdmin', 'adminToken');",
+                  "pm.sendRequest({ url: base + '/auth/service', method: 'POST', header: { 'Content-Type': 'application/json' }, body: { mode: 'raw', raw: JSON.stringify({ client_id: pm.variables.get('serviceClientId'), client_secret: pm.variables.get('serviceSecret') }) } }, function (err, res) {",
+                  "  if (!err && res && res.code === 200) save('serviceToken', res.json().access_token);",
+                  "});",
+                  "// Verifikasi di akhir: pastikan token benar-benar tersimpan.",
+                  "pm.test('Siapkan token: login mhs1 berhasil (200)', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Siapkan token: mhs1Token tersimpan', function () { pm.expect(!!pm.collectionVariables.get('mhs1Token')).to.eql(true); });",
+                  "if (typeof console !== 'undefined') console.log('[Siapkan token] mhs1Token=' + (pm.collectionVariables.get('mhs1Token') ? 'ada' : 'KOSONG'));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Dosen finalisasi kelas yang diampu -> 200 + sinkron",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{dosen2Token}}"
+              },
+              {
+                "key": "X-Device-ID",
+                "value": "{{devDosen2}}"
+              }
+            ],
+            "url": "{{baseUrl}}/kelas/{{kelasDosen2}}/finalisasi",
+            "description": "Memicu Service Nilai memanggil /transkrip/sinkron lewat gateway dengan token service."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200 (jalankan dalam jam akses 07:00-21:00 Asia/Jakarta)', () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.test('sinkron berhasil', () => pm.expect(b.sinkron.status).to.eql('berhasil'));",
+                  "pm.test('3 nilai tersinkron', () => pm.expect(b.sinkron.jumlah).to.eql(3));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Nilai yang sudah final tidak dapat diubah -> 403",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{dosen2Token}}"
+              },
+              {
+                "key": "X-Device-ID",
+                "value": "{{devDosen2}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/nilai/{{gradeDosen2}}",
+            "description": "dosen2 mencoba PUT /nilai/4 setelah kelas 2 di-finalisasi oleh request sebelumnya. Gateway meneruskan ke Service Nilai yang menemukan status_final=true pada kelas tersebut. Service menolak 403 Forbidden — nilai yang sudah final bersifat immutable. Membuktikan: integritas data terjamin setelah finalisasi — tidak ada perubahan nilai yang dapat dilakukan meskipun oleh pengampu sah.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nilai\": 100\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Dosen lain finalisasi kelas ini -> 403",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{dosen1Token}}"
+              },
+              {
+                "key": "X-Device-ID",
+                "value": "{{devDosen1}}"
+              }
+            ],
+            "url": "{{baseUrl}}/kelas/{{kelasDosen2}}/finalisasi",
+            "description": "dosen1 mencoba POST /kelas/2/finalisasi menggunakan dosen1Token. Kelas 2 diampu dosen2, bukan dosen1. Gateway memeriksa relasi pengampu di DB sebelum meneruskan — dosen1 tidak terdaftar sebagai pengampu kelas 2. Ditolak 403 Forbidden. Membuktikan: least privilege finalisasi — hanya pengampu sah yang dapat memfinalisasi kelasnya sendiri."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Mahasiswa finalisasi kelas -> 403",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{mhs1Token}}"
+              },
+              {
+                "key": "X-Device-ID",
+                "value": "{{devMhs1}}"
+              }
+            ],
+            "url": "{{baseUrl}}/kelas/{{kelasDosen1}}/finalisasi",
+            "description": "mhs1 mencoba POST /kelas/1/finalisasi menggunakan mhs1Token. Kebijakan di gateway hanya mengizinkan role dosen (pengampu kelas) untuk endpoint finalisasi. Role mahasiswa tidak memiliki izin. Ditolak 403 Forbidden sebelum sampai ke service. Membuktikan: least privilege berdasarkan role — mahasiswa tidak dapat memfinalisasi kelas meskipun terdaftar di kelas tersebut."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Token user ke /transkrip/sinkron -> 403",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{dosen1Token}}"
+              },
+              {
+                "key": "X-Device-ID",
+                "value": "{{devDosen1}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/transkrip/sinkron",
+            "description": "dosen1 (token user biasa dengan role dosen) mencoba POST /transkrip/sinkron. Endpoint ini hanya boleh diakses oleh token service (role: service, diterbitkan via /auth/service). Gateway memeriksa role dari JWT — role dosen bukan role service. Ditolak 403 Forbidden. Membuktikan: pemisahan otorisasi service vs user — endpoint internal sinkron tidak dapat dipanggil langsung oleh pengguna.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"kelas_id\": 2\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Token service ke /transkrip/sinkron -> 200 (idempoten)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{serviceToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/transkrip/sinkron",
+            "description": "Menggunakan serviceToken (role: service, dari variabel) untuk POST /transkrip/sinkron dengan body {\"kelas_id\": 2}. Kelas 2 sudah final — Service Transkrip membaca nilai final dari DB dan melakukan upsert (UNIQUE student_id+class_id). Sinkron berulang tidak menduplikasi data (idempoten). Respons: {jumlah: 3}. Membuktikan: pemisahan otorisasi service-to-service berjalan dengan benar melalui gateway.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"kelas_id\": 2\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('jumlah 3, tanpa duplikat', () => pm.expect(pm.response.json().jumlah).to.eql(3));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "04 - Transkrip",
+      "item": [
+        {
+          "name": "Siapkan token (login semua akun)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Device-ID",
+                "value": "{{devMhs1}}"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/login",
+            "description": "Menyegarkan token semua akun agar folder ini bisa dijalankan mandiri, tanpa copy-paste token. Collection Runner menjalankannya otomatis karena berada di urutan pertama folder. Jika menguji satu request secara manual, klik Send pada request ini lebih dulu.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"mhs1\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var base = pm.variables.get('baseUrl');",
+                  "var pw = pm.variables.get('password');",
+                  "function save(k, v) { if (!v) return; pm.collectionVariables.set(k, v); try { pm.environment.set(k, v); } catch (e) {} try { pm.globals.set(k, v); } catch (e) {} }",
+                  "var b = {}; try { b = pm.response.json(); } catch (e) {}",
+                  "save('mhs1Token', b.access_token); save('mhs1Refresh', b.refresh_token);",
+                  "function login(u, dev, k) {",
+                  "  pm.sendRequest({ url: base + '/auth/login', method: 'POST', header: { 'Content-Type': 'application/json', 'X-Device-ID': pm.variables.get(dev) }, body: { mode: 'raw', raw: JSON.stringify({ username: u, password: pw }) } }, function (err, res) {",
+                  "    if (!err && res && res.code === 200) { var j = res.json(); save(k, j.access_token); if (k === 'mhs1Token') save('mhs1Refresh', j.refresh_token); }",
+                  "  });",
+                  "}",
+                  "login('dosen1', 'devDosen1', 'dosen1Token');",
+                  "login('dosen2', 'devDosen2', 'dosen2Token');",
+                  "login('mhs2', 'devMhs2', 'mhs2Token');",
+                  "login('admin', 'devAdmin', 'adminToken');",
+                  "pm.sendRequest({ url: base + '/auth/service', method: 'POST', header: { 'Content-Type': 'application/json' }, body: { mode: 'raw', raw: JSON.stringify({ client_id: pm.variables.get('serviceClientId'), client_secret: pm.variables.get('serviceSecret') }) } }, function (err, res) {",
+                  "  if (!err && res && res.code === 200) save('serviceToken', res.json().access_token);",
+                  "});",
+                  "// Verifikasi di akhir: pastikan token benar-benar tersimpan.",
+                  "pm.test('Siapkan token: login mhs1 berhasil (200)', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Siapkan token: mhs1Token tersimpan', function () { pm.expect(!!pm.collectionVariables.get('mhs1Token')).to.eql(true); });",
+                  "if (typeof console !== 'undefined') console.log('[Siapkan token] mhs1Token=' + (pm.collectionVariables.get('mhs1Token') ? 'ada' : 'KOSONG'));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Mahasiswa melihat transkrip NIM sendiri -> 200",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{mhs1Token}}"
+              },
+              {
+                "key": "X-Device-ID",
+                "value": "{{devMhs1}}"
+              }
+            ],
+            "url": "{{baseUrl}}/transkrip/{{nimMhs1}}",
+            "description": "mhs1 (NIM 2210001) mengakses GET /transkrip/2210001 dengan mhs1Token dan device terdaftar. Gateway memverifikasi token dan memeriksa kebijakan: NIM di URL harus cocok dengan NIM di JWT. Status 200 mengembalikan transkrip mhs1 yang berisi nilai-nilai final yang telah disinkronisasi. Membuktikan: least privilege — mahasiswa hanya dapat melihat transkrip miliknya sendiri."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('NIM sesuai', () => pm.expect(pm.response.json().nim).to.eql(pm.variables.get('nimMhs1')));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Mahasiswa melihat transkrip NIM lain -> 403",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{mhs1Token}}"
+              },
+              {
+                "key": "X-Device-ID",
+                "value": "{{devMhs1}}"
+              }
+            ],
+            "url": "{{baseUrl}}/transkrip/{{nimMhs2}}",
+            "description": "mhs1 (NIM 2210001) mencoba GET /transkrip/2210002 (NIM mhs2) menggunakan mhs1Token. Gateway memeriksa kebijakan: NIM di URL (2210002) tidak cocok dengan NIM di token JWT (2210001). Ditolak 403 Forbidden sebelum meneruskan ke Service Transkrip. Membuktikan: least privilege — mahasiswa hanya boleh mengakses transkrip NIM sendiri, bukan NIM orang lain."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Admin melihat transkrip mahasiswa mana pun -> 200",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "X-Device-ID",
+                "value": "{{devAdmin}}"
+              }
+            ],
+            "url": "{{baseUrl}}/transkrip/{{nimMhs2}}",
+            "description": "Admin mengakses GET /transkrip/2210002 (NIM mhs2) menggunakan adminToken dan DEV-ADMIN-01. Kebijakan mengizinkan role admin membaca transkrip semua mahasiswa (bukan hanya milik sendiri). Status 200. Namun admin tidak bisa akses /nilai (dibuktikan di folder 02). Membuktikan: least privilege — admin memiliki cakupan terbatas: hanya READ transkrip, tidak dapat akses data nilai mentah."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Dosen tidak berhak melihat transkrip -> 403",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{dosen1Token}}"
+              },
+              {
+                "key": "X-Device-ID",
+                "value": "{{devDosen1}}"
+              }
+            ],
+            "url": "{{baseUrl}}/transkrip/{{nimMhs1}}",
+            "description": "dosen1 mencoba GET /transkrip/2210001 menggunakan dosen1Token. Kebijakan transkrip hanya mengizinkan mahasiswa (NIM sendiri) dan admin. Role dosen tidak ada dalam daftar yang diizinkan untuk endpoint ini. Ditolak 403 Forbidden. Membuktikan: least privilege antar role — dosen berwenang pada /nilai dan /kelas, tetapi tidak berwenang membaca transkrip mahasiswa."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Token service tidak berhak membaca transkrip -> 403",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{serviceToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/transkrip/{{nimMhs1}}",
+            "description": "serviceToken (role: service) mencoba GET /transkrip/2210001. Token service hanya berwenang memanggil POST /transkrip/sinkron, tidak GET /transkrip/:nim. Gateway memeriksa kebijakan: role service tidak diizinkan untuk endpoint ini. Ditolak 403 Forbidden. Membuktikan: least privilege token service — izin service dibatasi hanya pada operasi sinkronisasi yang dibutuhkan (prinsip minimum privilege)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "05 - Akses langsung ke service (assume breach)",
+      "item": [
+        {
+          "name": "Siapkan token (login semua akun)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Device-ID",
+                "value": "{{devMhs1}}"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/login",
+            "description": "Menyegarkan token semua akun agar folder ini bisa dijalankan mandiri, tanpa copy-paste token. Collection Runner menjalankannya otomatis karena berada di urutan pertama folder. Jika menguji satu request secara manual, klik Send pada request ini lebih dulu.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"mhs1\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var base = pm.variables.get('baseUrl');",
+                  "var pw = pm.variables.get('password');",
+                  "function save(k, v) { if (!v) return; pm.collectionVariables.set(k, v); try { pm.environment.set(k, v); } catch (e) {} try { pm.globals.set(k, v); } catch (e) {} }",
+                  "var b = {}; try { b = pm.response.json(); } catch (e) {}",
+                  "save('mhs1Token', b.access_token); save('mhs1Refresh', b.refresh_token);",
+                  "function login(u, dev, k) {",
+                  "  pm.sendRequest({ url: base + '/auth/login', method: 'POST', header: { 'Content-Type': 'application/json', 'X-Device-ID': pm.variables.get(dev) }, body: { mode: 'raw', raw: JSON.stringify({ username: u, password: pw }) } }, function (err, res) {",
+                  "    if (!err && res && res.code === 200) { var j = res.json(); save(k, j.access_token); if (k === 'mhs1Token') save('mhs1Refresh', j.refresh_token); }",
+                  "  });",
+                  "}",
+                  "login('dosen1', 'devDosen1', 'dosen1Token');",
+                  "login('dosen2', 'devDosen2', 'dosen2Token');",
+                  "login('mhs2', 'devMhs2', 'mhs2Token');",
+                  "login('admin', 'devAdmin', 'adminToken');",
+                  "pm.sendRequest({ url: base + '/auth/service', method: 'POST', header: { 'Content-Type': 'application/json' }, body: { mode: 'raw', raw: JSON.stringify({ client_id: pm.variables.get('serviceClientId'), client_secret: pm.variables.get('serviceSecret') }) } }, function (err, res) {",
+                  "  if (!err && res && res.code === 200) save('serviceToken', res.json().access_token);",
+                  "});",
+                  "// Verifikasi di akhir: pastikan token benar-benar tersimpan.",
+                  "pm.test('Siapkan token: login mhs1 berhasil (200)', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Siapkan token: mhs1Token tersimpan', function () { pm.expect(!!pm.collectionVariables.get('mhs1Token')).to.eql(true); });",
+                  "if (typeof console !== 'undefined') console.log('[Siapkan token] mhs1Token=' + (pm.collectionVariables.get('mhs1Token') ? 'ada' : 'KOSONG'));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Langsung ke Service Nilai tanpa gateway secret -> 403",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{mhs1Token}}"
+              }
+            ],
+            "url": "{{nilaiUrl}}/nilai",
+            "description": "Assume breach: service tidak percaya jaringan internal."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Langsung ke Service Transkrip tanpa gateway secret -> 403",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": "{{transkripUrl}}/transkrip/{{nimMhs1}}",
+            "description": "Request langsung ke port :3002 (Service Transkrip) menggunakan adminToken tanpa header X-Gateway-Secret. Service Transkrip memeriksa keberadaan X-Gateway-Secret di setiap request — tidak ditemukan, menolak 403 Forbidden. Token valid sekalipun tidak cukup tanpa secret gateway. Membuktikan: assume breach — service tidak mempercayai siapa pun di jaringan internal tanpa verifikasi secret, meskipun request datang dari localhost."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Gateway secret benar tetapi token tidak valid -> 401",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Gateway-Secret",
+                "value": "{{gatewaySecret}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenPalsu}}"
+              }
+            ],
+            "url": "{{nilaiUrl}}/nilai",
+            "description": "Isi variabel gatewaySecret dari .env (otomatis lewat: npm run postman:env). Bila kosong, hasilnya 403 karena secret tidak ada."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const adaSecret = !!pm.collectionVariables.get('gatewaySecret') || !!pm.environment.get('gatewaySecret');",
+                  "pm.test(adaSecret ? 'secret benar + token acak -> 401' : 'secret belum diisi -> 403', () => {",
+                  "  pm.response.to.have.status(adaSecret ? 401 : 403);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Gateway secret salah -> 403",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Gateway-Secret",
+                "value": "secret-palsu"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{mhs1Token}}"
+              }
+            ],
+            "url": "{{nilaiUrl}}/nilai",
+            "description": "Request langsung ke port :3001 (Service Nilai) dengan X-Gateway-Secret: secret-palsu dan token mhs1 yang valid. Service memverifikasi secret menggunakan perbandingan waktu konstan (timing-safe compare) — tidak cocok dengan GATEWAY_SECRET di .env. Ditolak 403 Forbidden. Membuktikan: assume breach — service tidak mempercayai gateway secara implisit; secret harus tepat dan diverifikasi dengan aman."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Client tidak bisa memalsukan X-Gateway-Secret lewat gateway -> 200",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{mhs1Token}}"
+              },
+              {
+                "key": "X-Device-ID",
+                "value": "{{devMhs1}}"
+              },
+              {
+                "key": "X-Gateway-Secret",
+                "value": "secret-palsu-client"
+              }
+            ],
+            "url": "{{baseUrl}}/nilai",
+            "description": "Gateway menimpa header dari client dengan secret yang benar, jadi request tetap sah."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "06 - Default deny",
+      "item": [
+        {
+          "name": "Siapkan token (login semua akun)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Device-ID",
+                "value": "{{devMhs1}}"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/login",
+            "description": "Menyegarkan token semua akun agar folder ini bisa dijalankan mandiri, tanpa copy-paste token. Collection Runner menjalankannya otomatis karena berada di urutan pertama folder. Jika menguji satu request secara manual, klik Send pada request ini lebih dulu.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"mhs1\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var base = pm.variables.get('baseUrl');",
+                  "var pw = pm.variables.get('password');",
+                  "function save(k, v) { if (!v) return; pm.collectionVariables.set(k, v); try { pm.environment.set(k, v); } catch (e) {} try { pm.globals.set(k, v); } catch (e) {} }",
+                  "var b = {}; try { b = pm.response.json(); } catch (e) {}",
+                  "save('mhs1Token', b.access_token); save('mhs1Refresh', b.refresh_token);",
+                  "function login(u, dev, k) {",
+                  "  pm.sendRequest({ url: base + '/auth/login', method: 'POST', header: { 'Content-Type': 'application/json', 'X-Device-ID': pm.variables.get(dev) }, body: { mode: 'raw', raw: JSON.stringify({ username: u, password: pw }) } }, function (err, res) {",
+                  "    if (!err && res && res.code === 200) { var j = res.json(); save(k, j.access_token); if (k === 'mhs1Token') save('mhs1Refresh', j.refresh_token); }",
+                  "  });",
+                  "}",
+                  "login('dosen1', 'devDosen1', 'dosen1Token');",
+                  "login('dosen2', 'devDosen2', 'dosen2Token');",
+                  "login('mhs2', 'devMhs2', 'mhs2Token');",
+                  "login('admin', 'devAdmin', 'adminToken');",
+                  "pm.sendRequest({ url: base + '/auth/service', method: 'POST', header: { 'Content-Type': 'application/json' }, body: { mode: 'raw', raw: JSON.stringify({ client_id: pm.variables.get('serviceClientId'), client_secret: pm.variables.get('serviceSecret') }) } }, function (err, res) {",
+                  "  if (!err && res && res.code === 200) save('serviceToken', res.json().access_token);",
+                  "});",
+                  "// Verifikasi di akhir: pastikan token benar-benar tersimpan.",
+                  "pm.test('Siapkan token: login mhs1 berhasil (200)', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Siapkan token: mhs1Token tersimpan', function () { pm.expect(!!pm.collectionVariables.get('mhs1Token')).to.eql(true); });",
+                  "if (typeof console !== 'undefined') console.log('[Siapkan token] mhs1Token=' + (pm.collectionVariables.get('mhs1Token') ? 'ada' : 'KOSONG'));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Endpoint tak dikenal -> 403",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{mhs1Token}}"
+              },
+              {
+                "key": "X-Device-ID",
+                "value": "{{devMhs1}}"
+              }
+            ],
+            "url": "{{baseUrl}}/admin",
+            "description": "mhs1 mencoba GET {{baseUrl}}/admin dengan token valid. Endpoint /admin tidak ada dalam daftar kebijakan gateway (policy.js). Kebijakan default: semua yang tidak dikenal ditolak 403 Forbidden — bukan 404, agar tidak memberi petunjuk keberadaan resource. Membuktikan: default deny — gateway hanya mengizinkan yang secara eksplisit diizinkan, semua lainnya ditolak."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Metode tak dikenal -> 403",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{dosen1Token}}"
+              },
+              {
+                "key": "X-Device-ID",
+                "value": "{{devDosen1}}"
+              }
+            ],
+            "url": "{{baseUrl}}/nilai/{{gradeDosen1}}",
+            "description": "dosen1 mencoba DELETE {{baseUrl}}/nilai/1 dengan token valid. Method DELETE tidak terdaftar dalam kebijakan gateway untuk endpoint /nilai/:id (hanya GET dan PUT yang diizinkan). Kebijakan default: method yang tidak dikenal ditolak 403 Forbidden. Membuktikan: default deny — gateway memblokir semua method yang tidak secara eksplisit diizinkan, bukan hanya endpoint yang tidak dikenal."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Path tanpa parameter wajib -> 403",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{mhs1Token}}"
+              },
+              {
+                "key": "X-Device-ID",
+                "value": "{{devMhs1}}"
+              }
+            ],
+            "url": "{{baseUrl}}/transkrip",
+            "description": "mhs1 mencoba GET {{baseUrl}}/transkrip (tanpa :nim) dengan token valid. Path /transkrip tidak cocok dengan pola yang terdaftar di kebijakan (/transkrip/:nim memerlukan parameter NIM). Kebijakan default: path yang tidak cocok dengan pola manapun ditolak 403 Forbidden. Membuktikan: default deny — setiap variasi path harus cocok persis dengan pola yang diizinkan, tidak ada fallback yang longgar."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// ===== Zero Trust: token otomatis (v7) =====",
+          "// Cara kerja:",
+          "//  1. Variabel fixture (baseUrl, devMhs1, password, ...) diisi bila kosong.",
+          "//  2. Token di collection/environment/globals disamakan ke nilai yang paling lama berlaku.",
+          "//  3. Tab Authorization yang berisi token VALID dipakai apa adanya (mode manual).",
+          "//  4. Header \"Bearer {{namaToken}}\" diganti token asli.",
+          "//  5. Bila token kosong/kedaluwarsa, pre-request LOGIN SENDIRI (auto-heal),",
+          "//     lalu header dikembalikan ke bentuk {{namaToken}} agar terisi token baru saat dikirim.",
+          "(function () {",
+          "  var CV = pm.collectionVariables;",
+          "  var EV = pm.environment;",
+          "  var GV = pm.globals;",
+          "  var LOG = function (m) { try { console.log('[ZT] ' + m); } catch (e) {} };",
+          "",
+          "  function norm(v) { return (v === undefined || v === null || v === '') ? null : v; }",
+          "  function rawGet(store, k) {",
+          "    if (!store) return null;",
+          "    try { return norm(store.get(k)); } catch (e) { return null; }",
+          "  }",
+          "  function rawGetPM(k) {",
+          "    try { return norm(pm.variables.get(k)); } catch (e) { return null; }",
+          "  }",
+          "  function getv(k) {",
+          "    return rawGet(CV, k) || rawGet(EV, k) || rawGet(GV, k) || rawGetPM(k);",
+          "  }",
+          "  function writeAll(k, v) {",
+          "    try { CV.set(k, v); } catch (e) {}",
+          "    try { if (EV) EV.set(k, v); } catch (e) {}",
+          "    try { if (GV) GV.set(k, v); } catch (e) {}",
+          "  }",
+          "  function saveAll(k, v) {",
+          "    writeAll(k, v);",
+          "    try { pm.variables.set(k, v); } catch (e) {}",
+          "  }",
+          "  function bare(v) { return String(v).replace(/^Bearer\\s+/i, ''); }",
+          "  function pdecode(t) {",
+          "    try {",
+          "      var s = String(t).split('.')[1].replace(/-/g, '+').replace(/_/g, '/');",
+          "      while (s.length % 4) s += '=';",
+          "      return JSON.parse(atob(s));",
+          "    } catch (e) { return null; }",
+          "  }",
+          "  function expOf(t) {",
+          "    var p = pdecode(bare(t));",
+          "    return p && typeof p.exp === 'number' ? p.exp : -1;",
+          "  }",
+          "  function stillValid(t) {",
+          "    var p = pdecode(bare(t));",
+          "    return !!(p && typeof p.exp === 'number' && p.exp > Date.now() / 1000 + 30);",
+          "  }",
+          "",
+          "  // ---------- 1. fixture ----------",
+          "  var FIXTURES = {",
+          "    baseUrl: 'http://127.0.0.1:3000',",
+          "    nilaiUrl: 'http://127.0.0.1:3001',",
+          "    transkripUrl: 'http://127.0.0.1:3002',",
+          "    password: 'Praktikum#2026',",
+          "    serviceClientId: 'service-nilai',",
+          "    devDosen1: 'DEV-DOSEN-01',",
+          "    devDosen2: 'DEV-DOSEN-02',",
+          "    devMhs1: 'DEV-MHS-01',",
+          "    devMhs2: 'DEV-MHS-02',",
+          "    devAdmin: 'DEV-ADMIN-01',",
+          "    devAsing: 'DEV-TIDAK-ADA',",
+          "    nimMhs1: '2210001',",
+          "    nimMhs2: '2210002',",
+          "    kelasDosen1: '1',",
+          "    kelasDosen2: '2',",
+          "    gradeDosen1: '1',",
+          "    gradeDosen2: '4',",
+          "    tokenPalsu: 'token.palsu.sekali'",
+          "  };",
+          "  Object.keys(FIXTURES).forEach(function (k) {",
+          "    if (!getv(k)) writeAll(k, FIXTURES[k]);",
+          "    if (!rawGet(CV, k)) { try { CV.set(k, getv(k)); } catch (e) {} }",
+          "  });",
+          "",
+          "  // ---------- 2. samakan token antar-scope ----------",
+          "  var MANAGED = ['dosen1Token', 'dosen2Token', 'mhs1Token', 'mhs2Token', 'adminToken',",
+          "                 'serviceToken', 'mhs1Refresh', 'refreshAccessToken'];",
+          "  MANAGED.forEach(function (k) {",
+          "    var c = rawGet(CV, k), e = rawGet(EV, k), g = rawGet(GV, k);",
+          "    var cands = [c, e, g].filter(function (x) { return !!x; });",
+          "    if (!cands.length) return;",
+          "    var pick = cands[0];",
+          "    cands.forEach(function (t) { if (expOf(t) > expOf(pick)) pick = t; });",
+          "    if (c !== pick || e !== pick || g !== pick) writeAll(k, pick);",
+          "  });",
+          "",
+          "  // ---------- 3. tab Authorization (mode manual) ----------",
+          "  // Tab ini MENIMPA header Authorization dan tidak bisa diubah dari script.",
+          "  var ra = pm.request.auth;",
+          "  if (ra && ra.type && ra.type !== 'noauth') {",
+          "    var tabTok = null;",
+          "    if (ra.type === 'bearer') {",
+          "      if (Array.isArray(ra.bearer)) {",
+          "        ra.bearer.forEach(function (el) { if (el && el.key === 'token') tabTok = el.value; });",
+          "      } else if (ra.bearer && typeof ra.bearer === 'object') {",
+          "        tabTok = ra.bearer.token;",
+          "      } else {",
+          "        tabTok = ra.bearer;",
+          "      }",
+          "    }",
+          "    if (tabTok && stillValid(tabTok)) return;",
+          "    if (tabTok && /^\\{\\{/.test(String(tabTok).trim())) {",
+          "      throw new Error('Tab Authorization berisi \"' + tabTok + '\" (placeholder) dan tab ini MENIMPA ' +",
+          "        'header Authorization. Pilih salah satu: (1) tab Authorization -> No Auth agar header ' +",
+          "        'Bearer {{...}} diisi otomatis, atau (2) tempel access_token hasil login langsung ke tab itu.');",
+          "    }",
+          "    throw new Error('Token di tab Authorization sudah kedaluwarsa / bukan token valid. Tempel ' +",
+          "      'access_token BARU dari request login, atau pilih tab Authorization -> No Auth agar token ' +",
+          "      'diisi otomatis.');",
+          "  }",
+          "",
+          "  // ---------- 4. auto-heal: login sendiri bila token kosong/kedaluwarsa ----------",
+          "  var HEAL = {",
+          "    mhs1Token: { user: 'mhs1', dev: 'devMhs1' },",
+          "    mhs2Token: { user: 'mhs2', dev: 'devMhs2' },",
+          "    dosen1Token: { user: 'dosen1', dev: 'devDosen1' },",
+          "    dosen2Token: { user: 'dosen2', dev: 'devDosen2' },",
+          "    adminToken: { user: 'admin', dev: 'devAdmin' },",
+          "    serviceToken: { service: true }",
+          "  };",
+          "  var reqName = (pm.info && pm.info.requestName) ? String(pm.info.requestName) : '';",
+          "  // Request yang memang menguji token tidak sah / tanpa token tidak boleh di-heal.",
+          "  var NO_HEAL = /tanpa access token|kredensial salah|password salah|tidak terdaftar|tidak valid|Setelah logout|^Logout|^Refresh token|^Pakai access token hasil refresh/i;",
+          "",
+          "  function heal(k) {",
+          "    var cfg = HEAL[k];",
+          "    if (!cfg) return false;",
+          "    var base = getv('baseUrl');",
+          "    if (!base) return false;",
+          "",
+          "    if (cfg.service) {",
+          "      var sec = getv('serviceSecret');",
+          "      if (!sec) {",
+          "        LOG('auto-login service dilewati: serviceSecret kosong. Pilih environment ' +",
+          "          '\"Zero Trust Sistem Nilai - Lokal\" atau jalankan: npm run postman:env');",
+          "        return false;",
+          "      }",
+          "      LOG('token service belum ada/kedaluwarsa -> login service otomatis');",
+          "      pm.sendRequest({",
+          "        url: base + '/auth/service',",
+          "        method: 'POST',",
+          "        header: { 'Content-Type': 'application/json' },",
+          "        body: { mode: 'raw', raw: JSON.stringify({ client_id: getv('serviceClientId') || 'service-nilai', client_secret: sec }) }",
+          "      }, function (err, res) {",
+          "        if (err || !res || res.code !== 200) {",
+          "          LOG('auto-login service GAGAL (' + (err ? String(err) : res && res.code) +",
+          "            '). serviceSecret mungkin tidak cocok dengan .env (jalankan npm run postman:env lalu Import ulang environment).');",
+          "          return;",
+          "        }",
+          "        saveAll(k, res.json().access_token);",
+          "        LOG('serviceToken dibuat otomatis');",
+          "      });",
+          "      return true;",
+          "    }",
+          "",
+          "    var dev = getv(cfg.dev);",
+          "    var pw = getv('password');",
+          "    LOG('token ' + k + ' belum ada/kedaluwarsa -> login otomatis sebagai ' + cfg.user + ' (' + dev + ')');",
+          "    pm.sendRequest({",
+          "      url: base + '/auth/login',",
+          "      method: 'POST',",
+          "      header: { 'Content-Type': 'application/json', 'X-Device-ID': dev },",
+          "      body: { mode: 'raw', raw: JSON.stringify({ username: cfg.user, password: pw }) }",
+          "    }, function (err, res) {",
+          "      if (err || !res || res.code !== 200) {",
+          "        LOG('auto-login ' + cfg.user + ' GAGAL (' + (err ? String(err) : res && res.code) +",
+          "          '). Pastikan server jalan, device ' + dev + ' terdaftar, dan password benar.');",
+          "        return;",
+          "      }",
+          "      var j = res.json();",
+          "      saveAll(k, j.access_token);",
+          "      LOG('token ' + k + ' dibuat otomatis untuk ' + cfg.user);",
+          "    });",
+          "    return true;",
+          "  }",
+          "",
+          "  // ---------- 5. header Authorization ----------",
+          "  var raw = pm.request.headers.get('Authorization');",
+          "  var h = raw ? String(raw).trim() : '';",
+          "",
+          "  // Tanpa header Authorization: hanya cek konfigurasi secret untuk /auth/service.",
+          "  if (!h) {",
+          "    if (/^POST \\/auth\\/service \\(/i.test(reqName) && !getv('serviceSecret')) {",
+          "      throw new Error('serviceSecret kosong, jadi POST /auth/service pasti 401. Pilih environment ' +",
+          "        '\"Zero Trust Sistem Nilai - Lokal\" (kanan atas Postman) atau jalankan: npm run postman:env ' +",
+          "        'lalu Import ulang tests/postman/local.postman_environment.json.');",
+          "    }",
+          "    return;",
+          "  }",
+          "",
+          "  if (/^eyJ[\\w-]*\\./.test(h)) { h = 'Bearer ' + h; pm.request.headers.upsert('Authorization', h); }",
+          "",
+          "  var m = /^Bearer\\s+\\{\\{\\s*([A-Za-z0-9_.]+)\\s*\\}\\}$/i.exec(h);",
+          "  if (m) {",
+          "    var name = m[1];",
+          "    var val = getv(name);",
+          "",
+          "    if (val && stillValid(val)) {",
+          "      pm.request.headers.upsert('Authorization', 'Bearer ' + bare(val));",
+          "      return;",
+          "    }",
+          "",
+          "    // Kosong / kedaluwarsa -> coba login otomatis, lalu biarkan {{nama}} diisi saat request dikirim.",
+          "    if (HEAL[name] && !NO_HEAL.test(reqName)) {",
+          "      if (heal(name)) {",
+          "        pm.request.headers.upsert('Authorization', 'Bearer {{' + name + '}}');",
+          "        return;",
+          "      }",
+          "      if (!val) {",
+          "        throw new Error(HEAL[name].service",
+          "          ? 'serviceToken kosong dan serviceSecret belum diisi, jadi login service tidak mungkin. ' +",
+          "            'Pilih environment \"Zero Trust Sistem Nilai - Lokal\" atau jalankan: npm run postman:env ' +",
+          "            'lalu Import ulang tests/postman/local.postman_environment.json.'",
+          "          : 'Tidak bisa login otomatis karena baseUrl kosong. Jalankan npm run postman:env lalu Import ' +",
+          "            'ulang environment, atau isi variabel baseUrl (mis. http://127.0.0.1:3000).');",
+          "      }",
+          "    }",
+          "",
+          "    if (val) {",
+          "      // Ada token tapi kedaluwarsa dan tidak bisa di-heal: kirim apa adanya (server akan menolak).",
+          "      pm.request.headers.upsert('Authorization', 'Bearer ' + bare(val));",
+          "      return;",
+          "    }",
+          "",
+          "    if (/Token$|Refresh$|refresh/i.test(name) && !HEAL[name]) {",
+          "      throw new Error('Variabel ' + name + ' masih kosong. Jalankan request \"00 - Diagnostik & Login mhs1\" ' +",
+          "        '(paling atas) atau \"Siapkan token\" di folder ini, lalu Send lagi. ' +",
+          "        'Detail ada di Postman Console (Ctrl+Alt+C).');",
+          "    }",
+          "    return;",
+          "  }",
+          "",
+          "  // Token literal kedaluwarsa di header -> ganti token terkelola sesuai device.",
+          "  var lit = /^Bearer\\s+(\\S+)$/i.exec(h);",
+          "  if (!lit) return;",
+          "  var p = pdecode(lit[1]);",
+          "  if (!p || typeof p.exp !== 'number' || p.exp > Date.now() / 1000 + 30) return;",
+          "  var devHeader = pm.variables.replaceIn(pm.request.headers.get('X-Device-ID') || '');",
+          "  var target = p.role === 'service' ? 'serviceToken' : ({",
+          "    'DEV-DOSEN-01': 'dosen1Token', 'DEV-DOSEN-02': 'dosen2Token',",
+          "    'DEV-MHS-01': 'mhs1Token', 'DEV-MHS-02': 'mhs2Token', 'DEV-ADMIN-01': 'adminToken'",
+          "  })[devHeader];",
+          "  var fresh = target && getv(target);",
+          "  if (fresh && stillValid(fresh)) {",
+          "    pm.request.headers.upsert('Authorization', 'Bearer ' + bare(fresh));",
+          "  }",
+          "})();"
+        ]
+      }
+    }
+  ]
+}
