@@ -6,3 +6,15 @@ database/*.db-wal
 tests/tmp/
 tests/postman/local.postman_environment.json
 *.log
+
+# Dokumen kerja lokal: tidak dipublikasikan ke repo (README.md tetap di-commit)
+tests/test-plan.md
+tests/hasil-pengujian.md
+TESTING_POSTMAN_DEMO.md
+
+# Koleksi demo untuk rekaman video (lokal)
+tests/postman/demo-zero-trust-9menit.postman_collection.json
+
+# Lokal / tidak relevan untuk repo
+.vscode/
+zero-trust-sistem-nilai/

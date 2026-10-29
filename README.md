@@ -175,9 +175,9 @@ Skenario lengkap siap-jalan (untuk demo video): `bash tests/demo-curl.sh` (setel
 
 ## Pengujian
 
-`npm test` (hentikan `npm start` dahulu; port 3000-3002 harus kosong). Runner menjalankan gateway + dua service sungguhan dengan database sementara, menembak API lewat HTTP, dan menulis hasil aktual ke [`tests/hasil-pengujian.md`](tests/hasil-pengujian.md). Cakupan: seluruh 22 skenario matriks minimum rancangan, ditambah uji batas (token `alg=none`, role token dipalsukan, jam akses di service, kegagalan sinkron). Rencana uji: [`tests/test-plan.md`](tests/test-plan.md).
+`npm test` (hentikan `npm start` dahulu; port 3000-3002 harus kosong). Runner menjalankan gateway + dua service sungguhan dengan database sementara, menembak API lewat HTTP, lalu menulis laporan lokal ke `tests/hasil-pengujian.md` (tidak dipublikasikan ke repo). Cakupan: seluruh 22 skenario matriks minimum, ditambah uji batas (token `alg=none`, role token dipalsukan, jam akses di service, kegagalan sinkron).
 
-Hasil terakhir saat repositori ini disiapkan: **54/54 lulus** (lihat file hasil untuk detail per skenario).
+Hasil terakhir saat repositori ini disiapkan: **54/54 lulus** (dijalankan dengan Node 24.13.0).
 
 ### Postman (42 request, 55 assertion)
 
