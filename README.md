@@ -179,9 +179,9 @@ Skenario lengkap siap-jalan (untuk demo video): `bash tests/demo-curl.sh` (setel
 
 Hasil terakhir saat repositori ini disiapkan: **54/54 lulus** (dijalankan dengan Node 24.13.0).
 
-### Postman (42 request, 55 assertion)
+### Postman (48 request, 67 assertion)
 
-Koleksi siap-import: [`tests/postman/zero-trust-sistem-nilai.postman_collection.json`](tests/postman/zero-trust-sistem-nilai.postman_collection.json). Tidak perlu PowerShell atau curl.
+Koleksi siap-import: [`tests/postman/zero-trust-sistem-nilai-v2.postman_collection.json`](tests/postman/zero-trust-sistem-nilai-v2.postman_collection.json). Tidak perlu PowerShell atau curl.
 
 1. Siapkan dan jalankan aplikasi (terminal 1):
 
@@ -200,12 +200,16 @@ Koleksi siap-import: [`tests/postman/zero-trust-sistem-nilai.postman_collection.
 
 3. Di Postman: **File > Import** dua file berikut.
 
-   - `tests/postman/zero-trust-sistem-nilai.postman_collection.json`
+   - `tests/postman/zero-trust-sistem-nilai-v2.postman_collection.json`
    - `tests/postman/local.postman_environment.json`
 
-4. Pilih environment **Zero Trust Sistem Nilai - Lokal** (pojok kanan atas), lalu klik **Run collection** (atau `Ctrl+Shift+R`).
+4. Pilih environment **Zero Trust Sistem Nilai - Lokal** (pojok kanan atas). Untuk mencoba manual: kirim request **`00 - Diagnostik & Login mhs1`** (paling atas), lalu langsung kirim request **Mahasiswa: hanya nilai miliknya** di folder `02` — token dipasang otomatis oleh pre-request script. Untuk menjalankan semuanya sekaligus, klik **Run collection** (atau `Ctrl+Shift+R`).
 
-5. Hasil yang diharapkan: **42 request, 55 assertion, 0 gagal** (sekitar 5 detik).
+   > **Penting:** pada request yang memakai token, tab **Authorization harus `No Auth`**. Tab Authorization menimpa header `Authorization` dan tidak bisa diubah dari script — ini penyebab utama `401 invalid_token` meski sudah login. Koleksi ini sudah `No Auth` di semua request; kalau Anda pernah menempel token di tab itu, set kembali ke **No Auth**.
+
+   > **Jika `mhs1Token masih kosong`:** pesan tersebut biasanya berasal dari collection lama yang masih terbuka di Postman. Import ulang file collection di atas, hapus atau tutup collection lama agar tidak tertukar, pilih environment **Zero Trust Sistem Nilai - Lokal**, lalu kirim `00 - Diagnostik & Login mhs1` lagi. Buka Postman Console (`Ctrl+Alt+C`) dan pastikan tercetak `versi koleksi: v7` serta token ada pada `scope collection`. Setelah itu kirim request mahasiswa di folder `02`. Token di environment tidak harus diisi manual.
+
+5. Hasil yang diharapkan: **48 request, 67 assertion, 0 gagal** (sekitar 6 detik). Newman juga menghitung request login tambahan dari skrip **Siapkan token**, sehingga total HTTP call bisa terlihat lebih banyak.
 
 | Folder | Cakupan |
 |---|---|
@@ -218,10 +222,18 @@ Koleksi siap-import: [`tests/postman/zero-trust-sistem-nilai.postman_collection.
 
 Catatan:
 
-- **Jalankan seluruh koleksi**, bukan satu request: folder `01` menyimpan token ke variabel koleksi yang dipakai folder berikutnya.
+- **Tab Authorization harus `No Auth`.** Tab ini **menimpa** header `Authorization` dan tidak dapat diubah dari script (terbukti: header yang di-`upsert` diabaikan). Kalau tab berisi token lama/placeholder, pre-request berhenti dengan pesan yang menyuruh memilih **No Auth**.
+- Request **`00 - Diagnostik & Login mhs1`** (paling atas) melakukan login + GET /nilai sekali klik dan mencetak ke **Postman Console** (`Ctrl+Alt+C`): versi koleksi, token di tiap scope, dan status GET. Gunakan ini untuk memastikan koleksi yang ter-import adalah versi terbaru.
+- Bila login mengembalikan access token tetapi request folder `02` melaporkan `mhs1Token` kosong, periksa versi di Console. Script collection v7 menyimpan token ke collection, environment, dan globals. Pesan lama yang meminta menjalankan diagnostik lagi menunjukkan request kemungkinan dijalankan dari collection lama; import ulang file collection v2 dari langkah di atas, pilih environment lokal, kemudian ulangi diagnostik. Pastikan diagnostik mencetak `versi koleksi: v7` dan `scope collection` berisi token.
+- **Token tidak perlu di-copy-paste.** Setiap kali request dikirim, pre-request script koleksi mengambil nilai `{{mhs1Token}}`/`{{dosen1Token}}`/dst. lalu **menulis token asli ke header `Authorization`**. Jadi `Bearer {{mhs1Token}}` tidak pernah terkirim apa adanya (penyebab pesan `{"error":"invalid_token"}`). Bila token masih kosong, request berhenti dengan pesan jelas: *"Variabel mhs1Token masih kosong..."*.
+- **Token disimpan di collection, environment, dan globals.** Globals membuat token tetap ditemukan walau koleksi di-import lebih dari sekali atau Anda menjalankan login di koleksi lain.
+- **Variabel fixture diisi otomatis** (`baseUrl`, `devMhs1`, `password`, `nim*`, `kelas*`, `grade*`) bila kosong. Tanpa ini, `{{devMhs1}}` yang tidak ter-resolve membuat login dibalas **403 device_not_registered** dan token tidak pernah tersimpan — persis gejala "sudah Siapkan token tapi tetap kosong".
+- Request **Siapkan token** sekarang punya assertion *"login berhasil (200)"* dan *"mhs1Token tersimpan"*, jadi kegagalan login terlihat langsung di tab Test Results, bukan jadi token kosong yang misterius.
+- Folder `02`–`06` diawali request **Siapkan token** (login semua akun) sehingga tiap folder bisa dijalankan mandiri. Access token berlaku 10 menit; bila muncul 401 setelah jeda lama, kirim ulang **Login** atau **Siapkan token**.
+- Setelah file koleksi diganti (versi v2), **import ulang** koleksi baru dan hapus koleksi lama di Postman agar tidak tertukar. Pre-request script hanya berlaku pada koleksi yang di-import.
 - Koleksi aman dijalankan berulang (finalisasi idempoten). Untuk mengembalikan data seed: hentikan `npm start`, `npm run db:init`, lalu `npm start` lagi.
 - Uji jam akses tidak bisa dari Postman saja: ubah `ACCESS_HOURS_START/END` di `.env`, restart, lalu ulangi request `PUT /nilai/:id` atau finalisasi (folder `02`/`03`).
-- Alternatif tanpa GUI (CI): `npx newman run tests/postman/zero-trust-sistem-nilai.postman_collection.json -e tests/postman/local.postman_environment.json`.
+- Alternatif tanpa GUI (CI): `npx newman run tests/postman/zero-trust-sistem-nilai-v2.postman_collection.json -e tests/postman/local.postman_environment.json`.
 
 ## Keputusan desain penting
 
